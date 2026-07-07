@@ -1,0 +1,90 @@
+// src/db.js
+// -----------------------------------------------------------------------
+// Minimal JSON-file "database" — fine for a small self-hosted panel.
+// If you outgrow this (many concurrent writes, many users), swap for
+// SQLite (better-sqlite3) — the function signatures below can stay the
+// same so nothing else in the app needs to change.
+// -----------------------------------------------------------------------
+import { promises as fs } from "node:fs";
+import { config } from "./config.js";
+
+const EMPTY_DB = { users: [], servers: [] };
+
+async function ensureDbFile() {
+  await fs.mkdir(config.dataDir, { recursive: true });
+  try {
+    await fs.access(config.dbFile);
+  } catch {
+    await fs.writeFile(config.dbFile, JSON.stringify(EMPTY_DB, null, 2));
+  }
+}
+
+async function readDb() {
+  await ensureDbFile();
+  const raw = await fs.readFile(config.dbFile, "utf-8");
+  return JSON.parse(raw);
+}
+
+async function writeDb(db) {
+  await fs.writeFile(config.dbFile, JSON.stringify(db, null, 2));
+}
+
+export const db = {
+  async getUser(discordId) {
+    const data = await readDb();
+    return data.users.find((u) => u.discordId === discordId) ?? null;
+  },
+
+  async upsertUser(user) {
+    const data = await readDb();
+    const idx = data.users.findIndex((u) => u.discordId === user.discordId);
+    const isAdmin = config.adminIds.includes(user.discordId);
+    const record = { ...user, isAdmin };
+    if (idx === -1) data.users.push(record);
+    else data.users[idx] = { ...data.users[idx], ...record };
+    await writeDb(data);
+    return record;
+  },
+
+  async listUsers() {
+    const data = await readDb();
+    return data.users;
+  },
+
+  async listServers() {
+    const data = await readDb();
+    return data.servers;
+  },
+
+  async listServersByOwner(ownerId) {
+    const data = await readDb();
+    return data.servers.filter((s) => s.ownerId === ownerId);
+  },
+
+  async getServer(id) {
+    const data = await readDb();
+    return data.servers.find((s) => s.id === id) ?? null;
+  },
+
+  async createServer(server) {
+    const data = await readDb();
+    data.servers.push(server);
+    await writeDb(data);
+    return server;
+  },
+
+  async updateServer(id, patch) {
+    const data = await readDb();
+    const idx = data.servers.findIndex((s) => s.id === id);
+    if (idx === -1) return null;
+    data.servers[idx] = { ...data.servers[idx], ...patch };
+    await writeDb(data);
+    return data.servers[idx];
+  },
+
+  async deleteServer(id) {
+    const data = await readDb();
+    data.servers = data.servers.filter((s) => s.id !== id);
+    await writeDb(data);
+  },
+};
