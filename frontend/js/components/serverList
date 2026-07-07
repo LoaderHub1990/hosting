@@ -1,0 +1,39 @@
+// js/components/serverList.js
+import { api } from "../api.js";
+import { routes, goTo } from "../router.js";
+
+const statusLabel = {
+  online: "ออนไลน์",
+  offline: "ออฟไลน์",
+  starting: "กำลังเริ่ม",
+};
+
+export async function renderServerList() {
+  const el = document.createElement("div");
+  el.innerHTML = `
+    <h1 class="page-title">เซิร์ฟเวอร์ของฉัน</h1>
+    <p class="page-sub">เลือกเซิร์ฟเวอร์เพื่อจัดการไฟล์และคำสั่ง</p>
+    <div class="server-grid" id="server-grid"></div>
+  `;
+
+  const grid = el.querySelector("#server-grid");
+  const servers = await api.listServers();
+
+  if (!servers.length) {
+    grid.innerHTML = `<div class="empty-state">ยังไม่มีเซิร์ฟเวอร์</div>`;
+    return el;
+  }
+
+  servers.forEach((s) => {
+    const card = document.createElement("div");
+    card.className = "server-card";
+    card.innerHTML = `
+      <div class="name"><span class="status-dot status-${s.status}"></span>${s.name}</div>
+      <div class="meta">${s.type} · ${s.id} · ${statusLabel[s.status] ?? s.status}</div>
+    `;
+    card.onclick = () => goTo(routes.files(s.id));
+    grid.appendChild(card);
+  });
+
+  return el;
+}
