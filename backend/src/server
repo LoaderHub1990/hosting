@@ -1,0 +1,39 @@
+// src/server.js
+import express from "express";
+import session from "express-session";
+import path from "node:path";
+import { config } from "./config.js";
+import { authRouter } from "./routes/auth.js";
+import { adminRouter } from "./routes/admin.js";
+import { serversRouter } from "./routes/servers.js";
+
+const app = express();
+
+app.use(express.json());
+app.use(
+  session({
+    secret: config.sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      // Set to true once you deploy behind HTTPS on your VPS
+      secure: false,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    },
+  })
+);
+
+app.use("/api/auth", authRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/servers", serversRouter);
+
+// Serve the existing frontend (the panel/ folder) as static files
+app.use(express.static(config.frontendDir));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(config.frontendDir, "index.html"));
+});
+
+app.listen(config.port, () => {
+  console.log(`✔ Discord hosting panel running at http://localhost:${config.port}`);
+});
