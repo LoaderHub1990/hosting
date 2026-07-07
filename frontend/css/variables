@@ -1,0 +1,34 @@
+:root {
+  /* Color */
+  --bg: #0d0f12;
+  --panel: #15181d;
+  --panel-hover: #1b1f26;
+  --panel-active: #21262f;
+  --border: #23272e;
+  --accent: #7c6cf6;
+  --accent-hover: #8f81f8;
+  --accent-dim: #7c6cf633;
+  --warn: #f5a623;
+  --danger: #ef5a5a;
+  --ok: #4fd18b;
+  --text: #e8eaed;
+  --text-dim: #9aa0a8;
+  --text-faint: #5c6169;
+
+  /* Status dot / stat-card colors, keyed by process status */
+  --status-online: var(--ok);
+  --status-offline: var(--text-faint);
+  --status-starting: var(--warn);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+
+  /* Type */
+  --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
+  --font-body: "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Layout */
+  --radius: 8px;
+  --sidebar-w: 220px;
+  --topbar-h: 52px;
+}
