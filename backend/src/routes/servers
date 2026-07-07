@@ -1,0 +1,176 @@
+// src/routes/servers.js
+import { Router } from "express";
+import multer from "multer";
+import { db } from "../db.js";
+import { config } from "../config.js";
+import { requireAuth, isOwnerOrAdmin } from "../middleware/auth.js";
+import * as files from "../lib/fileManager.js";
+import * as proc from "../lib/processManager.js";
+
+export const serversRouter = Router();
+serversRouter.use(requireAuth);
+
+// Uploads are kept in memory (they're small config/script files, not huge
+// media) then written into the server's own folder through safeResolve() —
+// same path-traversal protection as every other file operation.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024, files: 20 }, // 25MB / file, 20 files per drop
+});
+
+// Load + authorize the server for every /:id route below.
+async function loadServer(req, res, next) {
+  const server = await db.getServer(req.params.id);
+  if (!server) return res.status(404).json({ error: "ไม่พบเซิร์ฟเวอร์" });
+  if (!isOwnerOrAdmin(req.session.user, server)) {
+    return res.status(403).json({ error: "ไม่ใช่เจ้าของเซิร์ฟเวอร์นี้" });
+  }
+  req.server = server;
+  next();
+}
+
+// GET /api/servers  — servers I own (or everything, if admin)
+serversRouter.get("/", async (req, res) => {
+  const user = req.session.user;
+  const list = user.isAdmin ? await db.listServers() : await db.listServersByOwner(user.discordId);
+  res.json(list.map((s) => ({ ...s, status: proc.getStatus(s.id) })));
+});
+
+serversRouter.use("/:id", loadServer);
+
+// ---- Files ----------------------------------------------------------
+
+serversRouter.get("/:id/files", async (req, res) => {
+  try {
+    const list = await files.listDir(req.params.id, req.query.path ?? "");
+    res.json(list);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+serversRouter.get("/:id/files/read", async (req, res) => {
+  try {
+    const content = await files.readFile(req.params.id, req.query.path);
+    res.json({ content });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+serversRouter.post("/:id/files/write", async (req, res) => {
+  try {
+    await files.writeFile(req.params.id, req.body.path, req.body.content);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+serversRouter.delete("/:id/files", async (req, res) => {
+  try {
+    await files.deleteEntry(req.params.id, req.query.path);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+serversRouter.post("/:id/files/mkdir", async (req, res) => {
+  try {
+    await files.mkdir(req.params.id, req.body.path);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Drag-and-drop / file-picker upload. `path` (form field) is the target
+// folder inside the server; each dropped file keeps its original name.
+serversRouter.post("/:id/files/upload", upload.array("files", 20), async (req, res) => {
+  try {
+    const targetDir = req.body.path || "";
+    const saved = [];
+    for (const file of req.files || []) {
+      const relPath = targetDir ? `${targetDir}/${file.originalname}` : file.originalname;
+      await files.writeUploadedFile(req.params.id, relPath, file.buffer);
+      saved.push(relPath);
+    }
+    res.json({ ok: true, saved });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ---- package.json (Additional Node packages) ------------------------
+
+serversRouter.get("/:id/package", async (req, res) => {
+  res.json(await files.readPackageJson(req.params.id));
+});
+
+serversRouter.put("/:id/package", async (req, res) => {
+  // Body: { dependencies: { "axios": "^1.7.0", ... } }
+  const current = await files.readPackageJson(req.params.id);
+  const updated = { ...current, dependencies: req.body.dependencies ?? {} };
+  await files.writePackageJson(req.params.id, updated);
+  res.json(updated);
+});
+
+serversRouter.post("/:id/npm-install", async (req, res) => {
+  const lines = await proc.runOnce(req.params.id, "npm install");
+  res.json({ lines });
+});
+
+// ---- Process control --------------------------------------------------
+
+serversRouter.post("/:id/start", (req, res) => {
+  proc.start(req.params.id, req.server.entry, {
+    cpuLimit: req.server.cpuLimit,
+    memoryLimit: req.server.memoryLimit,
+  });
+  res.json({ status: proc.getStatus(req.params.id) });
+});
+
+serversRouter.post("/:id/stop", (req, res) => {
+  proc.stop(req.params.id);
+  res.json({ status: proc.getStatus(req.params.id) });
+});
+
+serversRouter.post("/:id/restart", (req, res) => {
+  proc.restart(req.params.id, req.server.entry, {
+    cpuLimit: req.server.cpuLimit,
+    memoryLimit: req.server.memoryLimit,
+  });
+  res.json({ status: proc.getStatus(req.params.id) });
+});
+
+serversRouter.get("/:id/logs", (req, res) => {
+  res.json({ lines: proc.getLogs(req.params.id) });
+});
+
+// Live status panel: cpu %, memory (RSS bytes), uptime (ms), disk (bytes),
+// the server's CPU%/Memory(MB) limits, its display "Address" (host:port,
+// like the Address field in Pterodactyl), and host-wide network throughput.
+serversRouter.get("/:id/stats", async (req, res) => {
+  const [runtime, disk] = await Promise.all([
+    proc.getStats(req.params.id),
+    files.diskUsage(req.params.id),
+  ]);
+
+  const host = config.publicHost || req.hostname;
+  const address = req.server.port ? `${host}:${req.server.port}` : host;
+
+  res.json({
+    ...runtime,
+    disk,
+    port: req.server.port ?? null,
+    address,
+    network: proc.getHostNetwork(),
+    createdAt: req.server.createdAt,
+  });
+});
+
+serversRouter.post("/:id/command", async (req, res) => {
+  const lines = await proc.runOnce(req.params.id, req.body.command);
+  res.json({ lines });
+});
