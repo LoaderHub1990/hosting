@@ -1,0 +1,77 @@
+// js/app.js
+import { initSecurityDeterrents } from "./security.js";
+import { initRouter, routes, goTo } from "./router.js";
+import { auth } from "./api.js";
+import { renderSidebar } from "./components/sidebar.js";
+import { renderPromptbar } from "./components/promptbar.js";
+import { renderServerList } from "./components/serverList.js";
+import { renderFileManager } from "./components/fileManager.js";
+import { renderFileEditor } from "./components/fileEditor.js";
+import { renderCommandConsole } from "./components/commandConsole.js";
+import { renderPackageEditor } from "./components/packageEditor.js";
+import { renderLogin } from "./components/login.js";
+import { renderAdminPanel } from "./components/adminPanel.js";
+
+initSecurityDeterrents();
+
+const app = document.getElementById("app");
+let currentUser = null;
+
+async function renderPage(route) {
+  if (route.name === "login") return renderLogin();
+  if (route.name === "admin") return renderAdminPanel();
+
+  switch (route.name) {
+    case "files":
+      return renderFileManager(route);
+    case "edit":
+      return renderFileEditor(route);
+    case "packages":
+      return renderPackageEditor(route);
+    case "commands":
+      return renderCommandConsole(route);
+    default:
+      return renderServerList(route);
+  }
+}
+
+async function render(route) {
+  // Everything except the login page itself requires being logged in.
+  if (route.name !== "login" && !currentUser) {
+    goTo(routes.login());
+    return;
+  }
+
+  app.innerHTML = "";
+
+  if (route.name === "login") {
+    app.className = ""; // drop the sidebar grid layout for the login screen
+    app.appendChild(await renderPage(route));
+    return;
+  }
+
+  app.className = "app-shell";
+  app.appendChild(renderSidebar(route, currentUser));
+
+  const main = document.createElement("div");
+  main.className = "main";
+  main.appendChild(renderPromptbar(route));
+
+  const content = document.createElement("div");
+  content.className = "content";
+  content.appendChild(await renderPage(route));
+
+  main.appendChild(content);
+  app.appendChild(main);
+}
+
+async function bootstrap() {
+  try {
+    currentUser = await auth.me();
+  } catch {
+    currentUser = null;
+  }
+  initRouter(render);
+}
+
+bootstrap();
