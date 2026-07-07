@@ -1,0 +1,32 @@
+// js/components/login.js
+import { auth } from "../api.js";
+
+export function renderLogin() {
+  const el = document.createElement("div");
+  el.className = "login-screen";
+  el.innerHTML = `
+    <div class="login-glow login-glow-a"></div>
+    <div class="login-glow login-glow-b"></div>
+
+    <div class="login-card">
+      <div class="login-brand">node<span>panel</span></div>
+      <p class="login-sub">ล็อกอินด้วย Discord เพื่อจัดการเซิร์ฟเวอร์บอทของคุณ</p>
+
+      <button class="btn btn-primary login-btn" id="btn-discord-login">
+        <span class="login-btn-icon">🎮</span>
+        เข้าสู่ระบบด้วย Discord
+      </button>
+
+      <div class="login-footer">Powered by your own VPS — ไม่มีบุคคลที่สามเก็บข้อมูลของคุณ</div>
+    </div>
+  `;
+
+  el.querySelector("#btn-discord-login").onclick = (e) => {
+    const btn = e.currentTarget;
+    btn.classList.add("is-loading");
+    btn.disabled = true;
+    window.location.href = auth.loginUrl;
+  };
+
+  return el;
+}
