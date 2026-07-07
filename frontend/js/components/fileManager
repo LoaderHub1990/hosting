@@ -1,0 +1,188 @@
+// js/components/fileManager.js
+import { api } from "../api.js";
+import { routes, goTo } from "../router.js";
+
+function formatSize(size) {
+  return size ?? "—";
+}
+
+function fileIcon(name, type) {
+  if (type === "dir") return "📁";
+  const ext = name.split(".").pop().toLowerCase();
+  if (["js", "mjs", "cjs", "ts"].includes(ext)) return "📜";
+  if (["json"].includes(ext)) return "🧩";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "🖼";
+  if (["env"].includes(ext)) return "🔐";
+  if (["md", "txt"].includes(ext)) return "📝";
+  return "📄";
+}
+
+export async function renderFileManager(route) {
+  const { serverId, path = "" } = route;
+  const el = document.createElement("div");
+
+  el.innerHTML = `
+    <h1 class="page-title">ไฟล์ — ${serverId}</h1>
+    <p class="page-sub">${path ? `/${path}` : "/ (root)"}</p>
+    <div class="toolbar">
+      <button class="btn" id="btn-up" ${path ? "" : "disabled"}>⬅ ย้อนกลับ</button>
+      <button class="btn" id="btn-new-file">+ ไฟล์ใหม่</button>
+      <button class="btn" id="btn-new-dir">+ โฟลเดอร์ใหม่</button>
+      <button class="btn btn-primary" id="btn-upload">⇧ อัปโหลดไฟล์</button>
+      <input type="file" id="file-input" multiple hidden />
+      <a class="btn" href="${routes.packages(serverId)}">📦 Packages</a>
+      <span style="flex:1"></span>
+      <button class="btn" id="btn-start">▶ Start</button>
+      <button class="btn btn-danger" id="btn-stop">■ Stop</button>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <div class="dropzone-inner">
+        <div class="dropzone-icon">⇩</div>
+        <div class="dropzone-text">ลากไฟล์จากเครื่องมาวางตรงนี้เพื่ออัปโหลด</div>
+        <div class="dropzone-sub">รองรับหลายไฟล์พร้อมกัน สูงสุด 20 ไฟล์ · 25MB ต่อไฟล์</div>
+      </div>
+    </div>
+
+    <div class="upload-progress" id="upload-progress" hidden>
+      <div class="upload-progress-label" id="upload-progress-label">กำลังอัปโหลด...</div>
+      <div class="upload-progress-track"><div class="upload-progress-bar" id="upload-progress-bar"></div></div>
+    </div>
+
+    <table class="file-table">
+      <thead>
+        <tr><th>ชื่อ</th><th>ประเภท</th><th>ขนาด</th><th></th></tr>
+      </thead>
+      <tbody id="file-rows"></tbody>
+    </table>
+  `;
+
+  const rows = el.querySelector("#file-rows");
+  const dropzone = el.querySelector("#dropzone");
+  const progressWrap = el.querySelector("#upload-progress");
+  const progressBar = el.querySelector("#upload-progress-bar");
+  const progressLabel = el.querySelector("#upload-progress-label");
+
+  async function refreshRows() {
+    const entries = await api.listFiles(serverId, path);
+    rows.innerHTML = "";
+
+    if (!entries.length) {
+      rows.innerHTML = `<tr><td colspan="4"><div class="empty-state">โฟลเดอร์นี้ว่างเปล่า — ลากไฟล์มาวางด้านบนเพื่ออัปโหลด</div></td></tr>`;
+      return;
+    }
+
+    entries.forEach((entry) => {
+      const tr = document.createElement("tr");
+      tr.className = `file-row ${entry.type === "dir" ? "is-dir" : ""}`;
+      const entryPath = path ? `${path}/${entry.name}` : entry.name;
+      tr.innerHTML = `
+        <td><span class="icon">${fileIcon(entry.name, entry.type)}</span>${entry.name}</td>
+        <td>${entry.type === "dir" ? "โฟลเดอร์" : "ไฟล์"}</td>
+        <td>${formatSize(entry.size)}</td>
+        <td><button class="btn btn-danger" data-delete>ลบ</button></td>
+      `;
+      tr.querySelector("[data-delete]").onclick = async (evt) => {
+        evt.stopPropagation();
+        if (!confirm(`ลบ "${entry.name}" ?`)) return;
+        await api.deleteFile(serverId, entryPath);
+        await refreshRows();
+      };
+      tr.onclick = () => {
+        if (entry.type === "dir") {
+          goTo(routes.files(serverId, entryPath));
+        } else {
+          goTo(routes.edit(serverId, entryPath));
+        }
+      };
+      rows.appendChild(tr);
+    });
+  }
+
+  async function uploadFileList(fileList) {
+    if (!fileList || !fileList.length) return;
+    progressWrap.hidden = false;
+    progressBar.style.width = "0%";
+    progressLabel.textContent = `กำลังอัปโหลด ${fileList.length} ไฟล์...`;
+
+    try {
+      await api.uploadFiles(serverId, path, fileList, (pct) => {
+        progressBar.style.width = `${pct}%`;
+      });
+      progressLabel.textContent = `อัปโหลดสำเร็จ ✓`;
+      progressBar.style.width = "100%";
+      await refreshRows();
+    } catch (err) {
+      progressLabel.textContent = `อัปโหลดล้มเหลว: ${err.message}`;
+      progressBar.style.background = "var(--danger)";
+    }
+    setTimeout(() => {
+      progressWrap.hidden = true;
+      progressBar.style.background = "";
+    }, 1600);
+  }
+
+  await refreshRows();
+
+  // ---- Drag & drop -------------------------------------------------
+  // Bound to `el` itself, which React-free rendering just throws away on
+  // the next navigation — no manual listener cleanup needed here.
+  let dragDepth = 0;
+  el.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    dragDepth++;
+    dropzone.classList.add("dropzone-active");
+  });
+  el.addEventListener("dragover", (e) => e.preventDefault());
+  el.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) dropzone.classList.remove("dropzone-active");
+  });
+  el.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    dropzone.classList.remove("dropzone-active");
+    uploadFileList(e.dataTransfer.files);
+  });
+
+  el.querySelector("#btn-up").onclick = () => {
+    if (!path) return;
+    const parent = path.split("/").slice(0, -1).join("/");
+    goTo(routes.files(serverId, parent));
+  };
+
+  el.querySelector("#btn-new-file").onclick = async () => {
+    const name = prompt("ชื่อไฟล์ใหม่:");
+    if (!name) return;
+    const filePath = path ? `${path}/${name}` : name;
+    await api.writeFile(serverId, filePath, "");
+    goTo(routes.edit(serverId, filePath));
+  };
+
+  el.querySelector("#btn-new-dir").onclick = async () => {
+    const name = prompt("ชื่อโฟลเดอร์ใหม่:");
+    if (!name) return;
+    const dirPath = path ? `${path}/${name}` : name;
+    await api.mkdir(serverId, dirPath);
+    await refreshRows();
+  };
+
+  const fileInput = el.querySelector("#file-input");
+  el.querySelector("#btn-upload").onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    uploadFileList(fileInput.files);
+    fileInput.value = "";
+  };
+
+  el.querySelector("#btn-start").onclick = async () => {
+    await api.start(serverId);
+    goTo(routes.commands(serverId)); // jump to console to watch it boot
+  };
+
+  el.querySelector("#btn-stop").onclick = async () => {
+    await api.stop(serverId);
+  };
+
+  return el;
+}
