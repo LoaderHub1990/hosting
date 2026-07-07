@@ -1,0 +1,337 @@
+// src/lib/processManager.js
+// -----------------------------------------------------------------------
+// Spawns each server's bot as a child process and keeps a rolling log
+// buffer in memory (lost on backend restart — fine for a demo panel).
+//
+// SECURITY NOTE (read this before putting real users on this):
+// This runs `npm install` and `node <entry>` directly on the VPS with
+// the same OS user as the backend itself. A malicious server owner can
+// run arbitrary code this way — install a package with a malicious
+// postinstall script, read other servers' files if permissions allow,
+// use the VPS's network/CPU for anything they want, etc.
+// For anything beyond "just me and people I fully trust", isolate each
+// server in its own Docker container (or at least its own low-privilege
+// OS user + cgroup limits) instead of spawning directly like this.
+//
+// RESOURCE LIMITS (CPU% / Memory MB):
+// - Memory is capped two ways: (1) Node itself is started with
+//   --max-old-space-size so the V8 heap can't grow past the limit, and
+//   (2) a watchdog polls real RSS memory every 2s and force-stops the
+//   process if it goes well past the limit anyway (covers native/off-heap
+//   memory Node's own flag can't see — same idea as a container OOM-kill).
+// - CPU is soft-throttled: the watchdog briefly SIGSTOPs the process when
+//   it's running hotter than its limit, then SIGCONTs it a moment later.
+//   This isn't a real cgroup quota (that needs Docker/root), but it works
+//   on a plain VPS with no extra dependencies and does bring average CPU
+//   usage back down toward the limit.
+// -----------------------------------------------------------------------
+import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import pidusage from "pidusage";
+import { serverDir } from "./fileManager.js";
+
+const MAX_LOG_LINES = 500;
+const WATCHDOG_INTERVAL_MS = 2000;
+
+/**
+ * @type {Map<string, {
+ *   proc: import('node:child_process').ChildProcess|null,
+ *   logs: {type:string,text:string}[],
+ *   status: string,
+ *   startedAt: number|null,
+ *   cpuLimitPercent: number,
+ *   memoryLimitMB: number,
+ *   watchdog: NodeJS.Timeout|null,
+ *   lastCpu: number,
+ *   lastMemoryMB: number,
+ * }>}
+ */
+const state = new Map();
+
+function getEntry(serverId) {
+  if (!state.has(serverId)) {
+    state.set(serverId, {
+      proc: null,
+      logs: [],
+      status: "offline",
+      startedAt: null,
+      cpuLimitPercent: 50,
+      memoryLimitMB: 512,
+      watchdog: null,
+      lastCpu: 0,
+      lastMemoryMB: 0,
+    });
+  }
+  return state.get(serverId);
+}
+
+function pushLog(serverId, type, text) {
+  const entry = getEntry(serverId);
+  text
+    .toString()
+    .split("\n")
+    .filter((l) => l.length)
+    .forEach((line) => entry.logs.push({ type, text: line }));
+  if (entry.logs.length > MAX_LOG_LINES) {
+    entry.logs.splice(0, entry.logs.length - MAX_LOG_LINES);
+  }
+}
+
+export function getStatus(serverId) {
+  return getEntry(serverId).status;
+}
+
+export function getLogs(serverId) {
+  return getEntry(serverId).logs;
+}
+
+/** Lets the admin route push new limits into a server that's already running. */
+export function updateLiveLimits(serverId, { cpuLimit, memoryLimit } = {}) {
+  const entry = getEntry(serverId);
+  if (cpuLimit) entry.cpuLimitPercent = cpuLimit;
+  if (memoryLimit) entry.memoryLimitMB = memoryLimit;
+}
+
+function stopWatchdog(entry) {
+  if (entry.watchdog) {
+    clearInterval(entry.watchdog);
+    entry.watchdog = null;
+  }
+}
+
+function startWatchdog(serverId) {
+  const entry = getEntry(serverId);
+  stopWatchdog(entry);
+  entry.watchdog = setInterval(async () => {
+    if (!entry.proc || !entry.proc.pid) return;
+    let usage;
+    try {
+      usage = await pidusage(entry.proc.pid);
+    } catch {
+      return; // process likely just exited — the "exit" handler will clean up
+    }
+
+    const memMB = usage.memory / 1024 / 1024;
+    entry.lastCpu = Math.round(usage.cpu * 10) / 10;
+    entry.lastMemoryMB = Math.round(memMB * 10) / 10;
+
+    // --- Memory: hard limit, kill on serious overshoot -------------------
+    if (entry.memoryLimitMB && memMB > entry.memoryLimitMB * 1.15) {
+      pushLog(
+        serverId,
+        "err",
+        `⚠ หน่วยความจำเกินขีดจำกัด (${memMB.toFixed(0)} MB > ${entry.memoryLimitMB} MB) — บังคับหยุดเซิร์ฟเวอร์เพื่อป้องกันโฮสต์`
+      );
+      stop(serverId);
+      return;
+    }
+
+    // --- CPU: soft-throttle via brief SIGSTOP/SIGCONT ---------------------
+    if (entry.cpuLimitPercent && usage.cpu > entry.cpuLimitPercent) {
+      const overshoot = Math.min(usage.cpu / entry.cpuLimitPercent, 4);
+      const pauseMs = Math.round(Math.min(1500, 300 * overshoot));
+      try {
+        entry.proc.kill("SIGSTOP");
+        const pausedProc = entry.proc;
+        setTimeout(() => {
+          if (entry.proc === pausedProc) {
+            try {
+              entry.proc.kill("SIGCONT");
+            } catch {
+              /* process may have exited during the pause */
+            }
+          }
+        }, pauseMs);
+      } catch {
+        /* SIGSTOP unsupported (e.g. Windows) — CPU limit becomes display-only */
+      }
+    }
+  }, WATCHDOG_INTERVAL_MS);
+}
+
+export function start(serverId, entryFile = "index.js", limits = {}) {
+  const entry = getEntry(serverId);
+  if (entry.proc) {
+    pushLog(serverId, "err", "เซิร์ฟเวอร์กำลังรันอยู่แล้ว");
+    return;
+  }
+
+  entry.cpuLimitPercent = limits.cpuLimit || entry.cpuLimitPercent || 50;
+  entry.memoryLimitMB = limits.memoryLimit || entry.memoryLimitMB || 512;
+
+  const cwd = serverDir(serverId);
+  // Leave ~20% headroom below the hard memory limit for the V8 heap flag,
+  // since RSS also includes native buffers/modules on top of the heap.
+  const heapMB = Math.max(64, Math.round(entry.memoryLimitMB * 0.8));
+  const nodeArgs = [`--max-old-space-size=${heapMB}`, entryFile];
+  const proc = spawn("node", nodeArgs, { cwd });
+
+  entry.proc = proc;
+  entry.status = "starting";
+  entry.startedAt = Date.now();
+  pushLog(
+    serverId,
+    "cmd",
+    `$ node ${entryFile}  (จำกัด CPU ${entry.cpuLimitPercent}% · Memory ${entry.memoryLimitMB}MB)`
+  );
+
+  proc.stdout.on("data", (d) => pushLog(serverId, "ok", d));
+  proc.stderr.on("data", (d) => pushLog(serverId, "err", d));
+
+  // Give it a moment before flipping to "online" — a crash-looping bot
+  // will still show as starting -> offline quickly, which is accurate.
+  setTimeout(() => {
+    if (entry.proc === proc) entry.status = "online";
+  }, 2000);
+
+  proc.on("exit", (code) => {
+    pushLog(serverId, code === 0 ? "ok" : "err", `process exited (code ${code})`);
+    entry.proc = null;
+    entry.status = "offline";
+    entry.startedAt = null;
+    entry.lastCpu = 0;
+    entry.lastMemoryMB = 0;
+    stopWatchdog(entry);
+  });
+
+  startWatchdog(serverId);
+}
+
+export function stop(serverId) {
+  const entry = getEntry(serverId);
+  if (!entry.proc) return;
+  entry.proc.kill("SIGCONT"); // in case it was mid-throttle-pause when stopped
+  entry.proc.kill();
+  entry.proc = null;
+  entry.status = "offline";
+  entry.startedAt = null;
+  entry.lastCpu = 0;
+  entry.lastMemoryMB = 0;
+  pushLog(serverId, "err", "หยุดการทำงานแล้ว");
+  stopWatchdog(entry);
+}
+
+/**
+ * Live resource usage for the "status" panel (CPU / memory / uptime).
+ * Returns zeros when the process isn't running instead of throwing, so
+ * the frontend can poll this on a timer without special-casing offline.
+ */
+export async function getStats(serverId) {
+  const entry = getEntry(serverId);
+  const uptimeMs = entry.startedAt ? Date.now() - entry.startedAt : 0;
+
+  if (!entry.proc || !entry.proc.pid) {
+    return {
+      status: entry.status,
+      cpu: 0,
+      memory: 0,
+      uptimeMs: 0,
+      cpuLimitPercent: entry.cpuLimitPercent,
+      memoryLimitMB: entry.memoryLimitMB,
+    };
+  }
+
+  try {
+    const usage = await pidusage(entry.proc.pid);
+    return {
+      status: entry.status,
+      cpu: Math.round(usage.cpu * 10) / 10, // percent
+      memory: usage.memory, // bytes (RSS)
+      uptimeMs,
+      cpuLimitPercent: entry.cpuLimitPercent,
+      memoryLimitMB: entry.memoryLimitMB,
+    };
+  } catch {
+    // Process may have just exited between the check above and pidusage()
+    return {
+      status: entry.status,
+      cpu: 0,
+      memory: 0,
+      uptimeMs,
+      cpuLimitPercent: entry.cpuLimitPercent,
+      memoryLimitMB: entry.memoryLimitMB,
+    };
+  }
+}
+
+export function restart(serverId, entryFile = "index.js", limits = {}) {
+  const entry = getEntry(serverId);
+  if (entry.proc) {
+    pushLog(serverId, "cmd", "$ restarting...");
+    entry.proc.once("exit", () => start(serverId, entryFile, limits));
+    entry.proc.kill("SIGCONT");
+    entry.proc.kill();
+  } else {
+    start(serverId, entryFile, limits);
+  }
+}
+
+/**
+ * Run a one-off shell command in the server's directory (used for the
+ * console tab, and for "npm install" after editing packages). Resolves
+ * once the command finishes.
+ */
+export function runOnce(serverId, command) {
+  return new Promise((resolve) => {
+    const cwd = serverDir(serverId);
+    pushLog(serverId, "cmd", `$ ${command}`);
+    const proc = spawn(command, { cwd, shell: true });
+
+    proc.stdout.on("data", (d) => pushLog(serverId, "ok", d));
+    proc.stderr.on("data", (d) => pushLog(serverId, "err", d));
+    proc.on("close", (code) => {
+      pushLog(serverId, code === 0 ? "ok" : "err", `(exit code ${code})`);
+      resolve(getLogs(serverId).slice(-20));
+    });
+  });
+}
+
+// -----------------------------------------------------------------------
+// Host-wide network throughput (rx/tx bytes per second), sampled from
+// /proc/net/dev every 2s. This is real, live data — but it's host-level,
+// not per-bot, since attributing network I/O to one child process needs
+// a network namespace (Docker) which this simple spawn-based setup
+// doesn't have. Falls back to zeros on non-Linux systems.
+// -----------------------------------------------------------------------
+let lastNetSample = null;
+let cachedNetwork = { rxBytesPerSec: 0, txBytesPerSec: 0 };
+
+function sampleHostNetwork() {
+  try {
+    const raw = readFileSync("/proc/net/dev", "utf-8");
+    let rx = 0;
+    let tx = 0;
+    raw
+      .split("\n")
+      .slice(2)
+      .forEach((line) => {
+        const [iface, rest] = line.split(":");
+        if (!iface || !rest) return;
+        if (iface.trim() === "lo") return; // skip loopback
+        const fields = rest.trim().split(/\s+/).map(Number);
+        rx += fields[0] || 0;
+        tx += fields[8] || 0;
+      });
+
+    const now = Date.now();
+    if (lastNetSample) {
+      const dtSec = (now - lastNetSample.time) / 1000;
+      if (dtSec > 0) {
+        cachedNetwork = {
+          rxBytesPerSec: Math.max(0, Math.round((rx - lastNetSample.rx) / dtSec)),
+          txBytesPerSec: Math.max(0, Math.round((tx - lastNetSample.tx) / dtSec)),
+        };
+      }
+    }
+    lastNetSample = { rx, tx, time: now };
+  } catch {
+    // /proc/net/dev not available (non-Linux) — cachedNetwork stays at zero
+  }
+}
+
+sampleHostNetwork();
+setInterval(sampleHostNetwork, WATCHDOG_INTERVAL_MS);
+
+export function getHostNetwork() {
+  return cachedNetwork;
+}
