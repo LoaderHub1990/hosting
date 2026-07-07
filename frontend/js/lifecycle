@@ -1,0 +1,13 @@
+// js/lifecycle.js
+// -----------------------------------------------------------------------
+// app.js wipes and rebuilds the whole page on every hash change, but it
+// never tells the *previous* page's component that it's gone. Any
+// setInterval() (stats polling) or document-level event listener (drag &
+// drop) a component sets up needs to be torn down manually, or it just
+// keeps running against detached DOM forever. Call onRouteLeave(fn) once
+// per component render — fn runs the next time the route changes.
+// -----------------------------------------------------------------------
+
+export function onRouteLeave(cleanup) {
+  window.addEventListener("hashchange", cleanup, { once: true });
+}
