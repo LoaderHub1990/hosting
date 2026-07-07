@@ -1,0 +1,61 @@
+// js/components/promptbar.js
+import { routes, goTo } from "../router.js";
+
+// Renders the address as a shell-like prompt, e.g.
+// ~/server/e59f29fe/files/plugins $ _
+export function renderPromptbar(route) {
+  const el = document.createElement("div");
+  el.className = "promptbar";
+
+  const segments = ["~"];
+
+  if (route.serverId) {
+    segments.push({ label: "server", href: routes.servers() });
+    segments.push({ label: route.serverId, href: routes.files(route.serverId) });
+
+    if (route.name === "files") {
+      segments.push({ label: "files", href: routes.files(route.serverId) });
+      if (route.path) {
+        const parts = route.path.split("/");
+        let acc = "";
+        for (const p of parts) {
+          acc = acc ? `${acc}/${p}` : p;
+          segments.push({ label: p, href: routes.files(route.serverId, acc) });
+        }
+      }
+    } else if (route.name === "edit") {
+      segments.push({ label: "files", href: routes.files(route.serverId) });
+      segments.push({ label: route.path });
+    } else if (route.name === "commands") {
+      segments.push({ label: "commands", href: routes.commands(route.serverId) });
+    } else if (route.name === "packages") {
+      segments.push({ label: "packages", href: routes.packages(route.serverId) });
+    }
+  }
+
+  segments.forEach((seg, i) => {
+    if (i > 0) {
+      const sep = document.createElement("span");
+      sep.className = "sep";
+      sep.textContent = "/";
+      el.appendChild(sep);
+    }
+    const span = document.createElement("span");
+    const label = typeof seg === "string" ? seg : seg.label;
+    const href = typeof seg === "string" ? null : seg.href;
+    span.textContent = label;
+    if (href) {
+      span.className = "seg";
+      span.onclick = () => goTo(href);
+    } else {
+      span.style.color = "var(--text)";
+    }
+    el.appendChild(span);
+  });
+
+  const cursor = document.createElement("span");
+  cursor.className = "cursor";
+  el.appendChild(cursor);
+
+  return el;
+}
