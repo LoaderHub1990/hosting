@@ -1,0 +1,36 @@
+// src/routes/auth.js
+import { Router } from "express";
+import { db } from "../db.js";
+import { getAuthorizeUrl, exchangeCodeForToken, fetchDiscordUser } from "../lib/discordOAuth.js";
+
+export const authRouter = Router();
+
+authRouter.get("/discord/login", (req, res) => {
+  res.redirect(getAuthorizeUrl());
+});
+
+authRouter.get("/discord/callback", async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).send("Missing ?code from Discord");
+
+  try {
+    const { access_token } = await exchangeCodeForToken(code);
+    const discordUser = await fetchDiscordUser(access_token);
+    const user = await db.upsertUser(discordUser);
+
+    req.session.user = user;
+    res.redirect("/"); // back to the frontend
+  } catch (err) {
+    console.error("[auth] Discord login failed:", err);
+    res.status(500).send("Login failed — check server logs / .env config");
+  }
+});
+
+authRouter.get("/me", (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: "not logged in" });
+  res.json(req.session.user);
+});
+
+authRouter.post("/logout", (req, res) => {
+  req.session.destroy(() => res.json({ ok: true }));
+});
