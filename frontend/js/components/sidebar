@@ -1,0 +1,60 @@
+// js/components/sidebar.js
+import { routes, goTo } from "../router.js";
+import { auth } from "../api.js";
+
+export function renderSidebar(route, user) {
+  const el = document.createElement("div");
+  el.className = "sidebar";
+
+  const inServer = route.serverId;
+
+  el.innerHTML = `
+    <div class="brand">node<span>panel</span></div>
+    <button class="nav-item ${route.name === "servers" ? "active" : ""}" data-nav="servers">
+      🏠 เซิร์ฟเวอร์ทั้งหมด
+    </button>
+    ${
+      inServer
+        ? `
+      <div style="height:1px;background:var(--border);margin:10px 4px;"></div>
+      <button class="nav-item ${route.name === "files" ? "active" : ""}" data-nav="files">📁 ไฟล์</button>
+      <button class="nav-item ${route.name === "packages" ? "active" : ""}" data-nav="packages">📦 Packages</button>
+      <button class="nav-item ${route.name === "commands" ? "active" : ""}" data-nav="commands">⌘ คำสั่ง</button>
+      `
+        : ""
+    }
+    ${
+      user?.isAdmin
+        ? `
+      <div style="height:1px;background:var(--border);margin:10px 4px;"></div>
+      <button class="nav-item ${route.name === "admin" ? "active" : ""}" data-nav="admin">🛠 แอดมิน</button>
+      `
+        : ""
+    }
+    <div style="flex:1"></div>
+    ${
+      user
+        ? `<button class="nav-item" data-nav="logout">👤 ${user.username} · ออกจากระบบ</button>`
+        : ""
+    }
+  `;
+
+  el.querySelector('[data-nav="servers"]').onclick = () => goTo(routes.servers());
+  if (inServer) {
+    el.querySelector('[data-nav="files"]').onclick = () => goTo(routes.files(route.serverId));
+    el.querySelector('[data-nav="packages"]').onclick = () => goTo(routes.packages(route.serverId));
+    el.querySelector('[data-nav="commands"]').onclick = () => goTo(routes.commands(route.serverId));
+  }
+  if (user?.isAdmin) {
+    el.querySelector('[data-nav="admin"]').onclick = () => goTo(routes.admin());
+  }
+  if (user) {
+    el.querySelector('[data-nav="logout"]').onclick = async () => {
+      await auth.logout();
+      location.hash = "";
+      location.reload();
+    };
+  }
+
+  return el;
+}
