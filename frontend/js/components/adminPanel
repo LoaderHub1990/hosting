@@ -1,0 +1,139 @@
+// js/components/adminPanel.js
+import { admin } from "../api.js";
+import { routes, goTo } from "../router.js";
+
+const STATUS_LABEL = { online: "ออนไลน์", offline: "ออฟไลน์", starting: "กำลังเริ่ม" };
+
+export async function renderAdminPanel() {
+  const el = document.createElement("div");
+  el.innerHTML = `
+    <h1 class="page-title">แผงแอดมิน</h1>
+    <p class="page-sub">สร้างเซิร์ฟเวอร์บอทใหม่ให้ผู้ใช้ พร้อมจำกัดสเปค CPU / หน่วยความจำต่อเซิร์ฟเวอร์ (ผู้ใช้ต้อง login ด้วย Discord อย่างน้อย 1 ครั้งก่อน ถึงจะเลือกเป็นเจ้าของได้)</p>
+
+    <div class="editor-wrap fade-in-up" style="padding:20px;margin-bottom:28px;max-width:520px;">
+      <label class="form-label">ชื่อเซิร์ฟเวอร์</label>
+      <input class="console-input" id="new-name" placeholder="เช่น my-discord-bot" style="width:100%;margin-bottom:14px;" />
+
+      <label class="form-label">เจ้าของ (เลือกจากผู้ใช้ที่เคย login)</label>
+      <select class="console-input" id="new-owner" style="width:100%;margin-bottom:14px;"></select>
+
+      <label class="form-label">ไฟล์เริ่มต้น (entry point)</label>
+      <input class="console-input" id="new-entry" value="index.js" style="width:100%;margin-bottom:14px;" />
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div>
+          <label class="form-label">จำกัด CPU (%)</label>
+          <input class="console-input" id="new-cpu" type="number" min="5" max="100" value="50" style="width:100%;" />
+        </div>
+        <div>
+          <label class="form-label">จำกัดหน่วยความจำ (MB)</label>
+          <input class="console-input" id="new-mem" type="number" min="64" max="8192" value="512" style="width:100%;" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-create">สร้างเซิร์ฟเวอร์</button>
+      <span id="create-status" style="margin-left:10px;font-size:13px;color:var(--text-dim);"></span>
+    </div>
+
+    <h2 style="font-size:16px;margin-bottom:12px;">เซิร์ฟเวอร์ทั้งหมด</h2>
+    <table class="file-table">
+      <thead>
+        <tr>
+          <th>ชื่อ</th>
+          <th>ID / Address</th>
+          <th>เจ้าของ</th>
+          <th>สถานะ</th>
+          <th>CPU limit</th>
+          <th>Memory limit</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="admin-server-rows"></tbody>
+    </table>
+  `;
+
+  const ownerSelect = el.querySelector("#new-owner");
+  const users = await admin.listUsers();
+  ownerSelect.innerHTML = users
+    .map((u) => `<option value="${u.discordId}">${u.username} (${u.discordId})</option>`)
+    .join("");
+
+  async function refreshServers() {
+    const servers = await admin.listServers();
+    const rows = el.querySelector("#admin-server-rows");
+    rows.innerHTML = servers
+      .map((s) => {
+        const owner = users.find((u) => u.discordId === s.ownerId);
+        const addr = s.port ? `:${s.port}` : "";
+        return `
+        <tr data-row="${s.id}">
+          <td>${s.name}</td>
+          <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);">${s.id}<br/><span style="color:var(--accent-hover)">${addr}</span></td>
+          <td>${owner ? owner.username : s.ownerId}</td>
+          <td><span class="status-dot status-${s.status}"></span>${STATUS_LABEL[s.status] ?? s.status}</td>
+          <td><input class="console-input limit-input" data-cpu="${s.id}" type="number" min="5" max="100" value="${s.cpuLimit ?? 50}" style="width:70px;padding:5px 8px;" /> %</td>
+          <td><input class="console-input limit-input" data-mem="${s.id}" type="number" min="64" max="8192" value="${s.memoryLimit ?? 512}" style="width:80px;padding:5px 8px;" /> MB</td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn" data-save="${s.id}">บันทึกสเปค</button>
+            <button class="btn" data-open="${s.id}">เปิด</button>
+          </td>
+        </tr>`;
+      })
+      .join("");
+
+    rows.querySelectorAll("[data-open]").forEach((btn) => {
+      btn.onclick = () => goTo(routes.files(btn.dataset.open));
+    });
+
+    rows.querySelectorAll("[data-save]").forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.dataset.save;
+        const row = rows.querySelector(`tr[data-row="${id}"]`);
+        const cpuLimit = Number(row.querySelector(`[data-cpu="${id}"]`).value);
+        const memoryLimit = Number(row.querySelector(`[data-mem="${id}"]`).value);
+        const original = btn.textContent;
+        btn.textContent = "กำลังบันทึก...";
+        btn.disabled = true;
+        try {
+          await admin.updateLimits(id, cpuLimit, memoryLimit);
+          btn.textContent = "บันทึกแล้ว ✓";
+        } catch (err) {
+          btn.textContent = `ผิดพลาด`;
+          console.error(err);
+        } finally {
+          setTimeout(() => {
+            btn.textContent = original;
+            btn.disabled = false;
+          }, 1200);
+        }
+      };
+    });
+  }
+
+  el.querySelector("#btn-create").onclick = async () => {
+    const name = el.querySelector("#new-name").value.trim();
+    const ownerId = ownerSelect.value;
+    const entry = el.querySelector("#new-entry").value.trim() || "index.js";
+    const cpuLimit = Number(el.querySelector("#new-cpu").value) || 50;
+    const memoryLimit = Number(el.querySelector("#new-mem").value) || 512;
+    const status = el.querySelector("#create-status");
+
+    if (!name || !ownerId) {
+      status.textContent = "กรอกชื่อและเลือกเจ้าของก่อน";
+      return;
+    }
+
+    status.textContent = "กำลังสร้าง...";
+    try {
+      await admin.createServer(name, ownerId, entry, cpuLimit, memoryLimit);
+      status.textContent = "สร้างสำเร็จ ✓";
+      el.querySelector("#new-name").value = "";
+      await refreshServers();
+    } catch (err) {
+      status.textContent = `ผิดพลาด: ${err.message}`;
+    }
+  };
+
+  await refreshServers();
+  return el;
+}
