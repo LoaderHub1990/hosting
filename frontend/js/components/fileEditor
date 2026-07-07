@@ -1,0 +1,41 @@
+// js/components/fileEditor.js
+import { api } from "../api.js";
+import { routes, goTo } from "../router.js";
+
+export async function renderFileEditor(route) {
+  const { serverId, path } = route;
+  const el = document.createElement("div");
+
+  el.innerHTML = `
+    <h1 class="page-title">แก้ไขไฟล์</h1>
+    <p class="page-sub">${path}</p>
+    <div class="editor-wrap">
+      <div class="editor-header">
+        <span>${path}</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn" id="btn-cancel">ยกเลิก</button>
+          <button class="btn btn-primary" id="btn-save">บันทึก</button>
+        </div>
+      </div>
+      <textarea class="editor-textarea" id="editor-textarea" spellcheck="false"></textarea>
+    </div>
+  `;
+
+  const textarea = el.querySelector("#editor-textarea");
+  textarea.value = await api.readFile(serverId, path);
+
+  el.querySelector("#btn-cancel").onclick = () => {
+    const parent = path.split("/").slice(0, -1).join("/");
+    goTo(routes.files(serverId, parent));
+  };
+
+  el.querySelector("#btn-save").onclick = async () => {
+    const btn = el.querySelector("#btn-save");
+    btn.textContent = "กำลังบันทึก...";
+    await api.writeFile(serverId, path, textarea.value);
+    btn.textContent = "บันทึกแล้ว ✓";
+    setTimeout(() => (btn.textContent = "บันทึก"), 1200);
+  };
+
+  return el;
+}
