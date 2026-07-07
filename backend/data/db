@@ -1,0 +1,40 @@
+{
+  "users": [
+    {
+      "discordId": "1482035641905582314",
+      "username": "Me Egg Big",
+      "avatar": "https://cdn.discordapp.com/avatars/1482035641905582314/9fdbf22f4c653ca2110973c5b6aef18d.png",
+      "isAdmin": true
+    },
+    {
+      "discordId": "1424742877543534622",
+      "username": "Ó╭╮Ò",
+      "avatar": "https://cdn.discordapp.com/avatars/1424742877543534622/6bb64f0380695093cdeac9fa2c5a73ff.png",
+      "isAdmin": false
+    }
+  ],
+  "servers": [
+    {
+      "id": "28939568",
+      "name": "DDD",
+      "ownerId": "1482035641905582314",
+      "entry": "index.js",
+      "type": "Node.js (discord.js)",
+      "createdAt": 1783453985357,
+      "port": 25319,
+      "cpuLimit": 50,
+      "memoryLimit": 512
+    },
+    {
+      "id": "4792240b",
+      "name": "SSS",
+      "ownerId": "1424742877543534622",
+      "entry": "index.js",
+      "type": "Node.js (discord.js)",
+      "createdAt": 1783454094527,
+      "port": 22518,
+      "cpuLimit": 50,
+      "memoryLimit": 512
+    }
+  ]
+}
