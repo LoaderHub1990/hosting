@@ -1,0 +1,52 @@
+// src/config.js
+import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export const config = {
+  port: Number(process.env.PORT) || 3000,
+
+  discord: {
+    clientId: process.env.DISCORD_CLIENT_ID || "",
+    clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
+    redirectUri: process.env.DISCORD_REDIRECT_URI || "http://localhost:3000/api/auth/discord/callback",
+  },
+
+  sessionSecret: process.env.SESSION_SECRET || "dev-only-insecure-secret",
+
+  adminIds: (process.env.ADMIN_DISCORD_IDS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+
+  // Where per-server files live: backend/data/servers/<id>/
+  dataDir: path.join(__dirname, "..", "data"),
+  serversDir: path.join(__dirname, "..", "data", "servers"),
+  dbFile: path.join(__dirname, "..", "data", "db.json"),
+
+  // Frontend static files (the panel/ folder you already have)
+  frontendDir: path.join(__dirname, "..", "..", "frontend"),
+
+  // Each server gets a fake "connection port" assigned on creation, purely
+  // for display in the panel UI (e.g. "panel.example.com:23841"), the same
+  // way Pterodactyl shows an Address field. Discord bots don't actually
+  // listen on this port — it's just a stable per-server identifier.
+  portRange: { min: 20000, max: 29999 },
+
+  // Overrides the host shown in the Address field. Leave blank to use
+  // whatever hostname the browser actually used to reach the panel.
+  publicHost: process.env.PANEL_PUBLIC_HOST || "",
+
+  // Default resource limits for newly created servers (can be changed
+  // per-server from the admin panel afterwards).
+  defaultCpuLimit: Number(process.env.DEFAULT_CPU_LIMIT) || 50, // percent
+  defaultMemoryLimit: Number(process.env.DEFAULT_MEMORY_LIMIT) || 512, // MB
+};
+
+if (!config.discord.clientId || !config.discord.clientSecret) {
+  console.warn(
+    "[config] DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET ยังไม่ได้ตั้งค่าใน .env — ระบบ login จะยังใช้งานไม่ได้"
+  );
+}
