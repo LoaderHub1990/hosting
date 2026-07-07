@@ -1,0 +1,40 @@
+// js/security.js
+// -----------------------------------------------------------------------
+// IMPORTANT / read before relying on this:
+//
+// Everything in this file is a *deterrent*, not real protection. Any
+// browser lets a determined visitor read your shipped JS/CSS/HTML
+// regardless of these tricks (view-source can be blocked, but network
+// tab, "Save page as", or just typing the URL directly cannot). This
+// only discourages casual right-click / Ctrl+U snooping — it does NOT
+// protect secrets. Never put API keys, tokens, or anything sensitive
+// in frontend code; that must live server-side.
+// -----------------------------------------------------------------------
+
+export function initSecurityDeterrents() {
+  // Disable right-click context menu
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  // Block common "view source / devtools" shortcuts
+  document.addEventListener("keydown", (e) => {
+    const key = e.key.toLowerCase();
+    const blocked =
+      e.key === "F12" ||
+      (e.ctrlKey && key === "u") ||                          // view-source
+      (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(key)) || // devtools panels
+      (e.metaKey && e.altKey && ["i", "j", "c"].includes(key));     // mac equivalents
+
+    if (blocked) e.preventDefault();
+  });
+
+  // Rough devtools-open heuristic: if the gap between outer and inner
+  // window size grows past a threshold, devtools is likely docked open.
+  const banner = document.getElementById("security-banner");
+  const THRESHOLD = 160;
+  setInterval(() => {
+    const widthGap = window.outerWidth - window.innerWidth;
+    const heightGap = window.outerHeight - window.innerHeight;
+    const likelyOpen = widthGap > THRESHOLD || heightGap > THRESHOLD;
+    if (banner) banner.hidden = !likelyOpen;
+  }, 1000);
+}
