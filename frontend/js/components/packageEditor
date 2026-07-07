@@ -1,0 +1,145 @@
+// js/components/packageEditor.js
+import { api } from "../api.js";
+
+const QUICK_ADD = [
+  ["discord.js", "^14.14.1"],
+  ["axios", "^1.7.0"],
+  ["dotenv", "^16.4.5"],
+  ["moment", "^2.30.1"],
+  ["node-cron", "^3.0.3"],
+  ["mongoose", "^8.4.0"],
+];
+
+export async function renderPackageEditor(route) {
+  const { serverId } = route;
+  const el = document.createElement("div");
+  el.innerHTML = `
+    <h1 class="page-title">Node Packages — ${serverId}</h1>
+    <p class="page-sub">แก้ package.json → dependencies แล้วกด "npm install" เพื่อดาวน์โหลดจริงบนเซิร์ฟเวอร์</p>
+
+    <table class="file-table" id="pkg-table" style="margin-bottom:14px;">
+      <thead><tr><th>Package</th><th>Version</th><th></th></tr></thead>
+      <tbody id="pkg-rows"></tbody>
+    </table>
+
+    <div class="toolbar">
+      <input class="console-input" id="pkg-name" placeholder="ชื่อ package เช่น axios" style="max-width:200px;" />
+      <input class="console-input" id="pkg-version" placeholder="เวอร์ชัน เช่น ^1.7.0" style="max-width:140px;" />
+      <button class="btn" id="btn-add-pkg">+ เพิ่ม</button>
+      <button class="btn btn-primary" id="btn-save-install">บันทึก + npm install</button>
+    </div>
+
+    <div class="quick-add">
+      <span class="quick-add-label">เพิ่มด่วน:</span>
+      ${QUICK_ADD.map(([name, ver]) => `<button class="chip" data-quick="${name}" data-ver="${ver}">${name}</button>`).join("")}
+    </div>
+
+    <div class="console" id="install-console" style="display:none;"></div>
+  `;
+
+  const rows = el.querySelector("#pkg-rows");
+  let pkg = await api.getPackage(serverId);
+
+  function renderRows() {
+    const deps = pkg.dependencies || {};
+    const names = Object.keys(deps);
+    rows.innerHTML = names.length
+      ? names
+          .map(
+            (name) => `
+        <tr>
+          <td>${name}</td>
+          <td style="font-family:var(--font-mono);">${deps[name]}</td>
+          <td><button class="btn btn-danger" data-remove="${name}">ลบ</button></td>
+        </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="3"><div class="empty-state">ยังไม่มี package เพิ่มเติม</div></td></tr>`;
+
+    rows.querySelectorAll("[data-remove]").forEach((btn) => {
+      btn.onclick = () => {
+        delete pkg.dependencies[btn.dataset.remove];
+        renderRows();
+      };
+    });
+  }
+  renderRows();
+
+  const nameInput = el.querySelector("#pkg-name");
+  const versionInput = el.querySelector("#pkg-version");
+
+  function addPackage(name, version) {
+    if (!name) return;
+    pkg.dependencies = pkg.dependencies || {};
+    pkg.dependencies[name] = version || "latest";
+    renderRows();
+  }
+
+  el.querySelector("#btn-add-pkg").onclick = () => {
+    addPackage(nameInput.value.trim(), versionInput.value.trim());
+    nameInput.value = "";
+    versionInput.value = "";
+    nameInput.focus();
+  };
+
+  [nameInput, versionInput].forEach((input) => {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") el.querySelector("#btn-add-pkg").click();
+    });
+  });
+
+  el.querySelectorAll("[data-quick]").forEach((chip) => {
+    chip.onclick = () => addPackage(chip.dataset.quick, chip.dataset.ver);
+  });
+
+  function appendConsoleLines(consoleEl, lines) {
+    lines.forEach((l) => {
+      const div = document.createElement("div");
+      div.className = `line ${l.type}`;
+      div.textContent = l.text;
+      consoleEl.appendChild(div);
+    });
+    if (lines.length) consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  el.querySelector("#btn-save-install").onclick = async () => {
+    const consoleEl = el.querySelector("#install-console");
+    const btn = el.querySelector("#btn-save-install");
+    consoleEl.style.display = "block";
+    consoleEl.innerHTML = `<div class="line cmd">กำลังบันทึก package.json...</div>`;
+    btn.disabled = true;
+    btn.textContent = "กำลังติดตั้ง...";
+
+    await api.savePackage(serverId, pkg.dependencies || {});
+    consoleEl.innerHTML += `<div class="line ok">บันทึกแล้ว — กำลังรัน npm install...</div>`;
+
+    // npm-install resolves only once the whole command finishes, so poll
+    // the shared log buffer in the meantime to make the output feel live
+    // instead of dumping everything in one go at the end.
+    let seen = (await api.getLogs(serverId)).lines.length;
+    const poller = setInterval(async () => {
+      try {
+        const { lines } = await api.getLogs(serverId);
+        if (lines.length > seen) {
+          appendConsoleLines(consoleEl, lines.slice(seen));
+          seen = lines.length;
+        }
+      } catch {
+        /* ignore transient errors, next tick will retry */
+      }
+    }, 500);
+
+    try {
+      await api.npmInstall(serverId);
+      // Final sync in case the last poll tick missed the tail end.
+      const { lines: latest } = await api.getLogs(serverId);
+      if (latest.length > seen) appendConsoleLines(consoleEl, latest.slice(seen));
+    } finally {
+      clearInterval(poller);
+      btn.disabled = false;
+      btn.textContent = "บันทึก + npm install";
+    }
+  };
+
+  return el;
+}
