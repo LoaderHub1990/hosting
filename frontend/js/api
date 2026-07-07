@@ -1,0 +1,127 @@
+// js/api.js
+// -----------------------------------------------------------------------
+// Every function here is the ONE place that should know about network
+// calls. All requests go to the real backend now (see /backend).
+// -----------------------------------------------------------------------
+
+const API_BASE = "/api";
+
+async function request(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin", // send the session cookie
+    ...options,
+  });
+  if (res.status === 401) {
+    const err = new Error("unauthorized");
+    err.code = 401;
+    throw err;
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `API ${path} failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export const auth = {
+  loginUrl: `${API_BASE}/auth/discord/login`,
+  me: () => request("/auth/me"),
+  logout: () => request("/auth/logout", { method: "POST" }),
+};
+
+export const api = {
+  listServers: () => request("/servers"),
+
+  listFiles: (serverId, path = "") =>
+    request(`/servers/${serverId}/files?path=${encodeURIComponent(path)}`),
+
+  readFile: async (serverId, path) => {
+    const data = await request(`/servers/${serverId}/files/read?path=${encodeURIComponent(path)}`);
+    return data.content;
+  },
+
+  writeFile: (serverId, path, content) =>
+    request(`/servers/${serverId}/files/write`, {
+      method: "POST",
+      body: JSON.stringify({ path, content }),
+    }),
+
+  deleteFile: (serverId, path) =>
+    request(`/servers/${serverId}/files?path=${encodeURIComponent(path)}`, { method: "DELETE" }),
+
+  mkdir: (serverId, path) =>
+    request(`/servers/${serverId}/files/mkdir`, {
+      method: "POST",
+      body: JSON.stringify({ path }),
+    }),
+
+  getPackage: (serverId) => request(`/servers/${serverId}/package`),
+
+  savePackage: (serverId, dependencies) =>
+    request(`/servers/${serverId}/package`, {
+      method: "PUT",
+      body: JSON.stringify({ dependencies }),
+    }),
+
+  npmInstall: (serverId) => request(`/servers/${serverId}/npm-install`, { method: "POST" }),
+
+  start: (serverId) => request(`/servers/${serverId}/start`, { method: "POST" }),
+  stop: (serverId) => request(`/servers/${serverId}/stop`, { method: "POST" }),
+  restart: (serverId) => request(`/servers/${serverId}/restart`, { method: "POST" }),
+  getLogs: (serverId) => request(`/servers/${serverId}/logs`),
+  getStats: (serverId) => request(`/servers/${serverId}/stats`),
+
+  // Drag-and-drop / file-picker upload. Uses XHR (not fetch) so we can
+  // report upload progress back to the dropzone UI.
+  uploadFiles(serverId, targetPath, fileList, onProgress) {
+    return new Promise((resolve, reject) => {
+      const form = new FormData();
+      form.append("path", targetPath || "");
+      Array.from(fileList).forEach((f) => form.append("files", f));
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE}/servers/${serverId}/files/upload`);
+      xhr.withCredentials = true;
+
+      xhr.upload.onprogress = (e) => {
+        if (onProgress && e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        try {
+          const body = JSON.parse(xhr.responseText || "{}");
+          if (xhr.status >= 200 && xhr.status < 300) resolve(body);
+          else reject(new Error(body.error || `Upload failed: ${xhr.status}`));
+        } catch {
+          reject(new Error(`Upload failed: ${xhr.status}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Upload failed — network error"));
+      xhr.send(form);
+    });
+  },
+
+  runCommand: async (serverId, command) => {
+    const data = await request(`/servers/${serverId}/command`, {
+      method: "POST",
+      body: JSON.stringify({ command }),
+    });
+    return data.lines;
+  },
+};
+
+export const admin = {
+  listUsers: () => request("/admin/users"),
+  listServers: () => request("/admin/servers"),
+  createServer: (name, ownerId, entry, cpuLimit, memoryLimit) =>
+    request("/admin/servers", {
+      method: "POST",
+      body: JSON.stringify({ name, ownerId, entry, cpuLimit, memoryLimit }),
+    }),
+  deleteServer: (id) => request(`/admin/servers/${id}`, { method: "DELETE" }),
+  updateLimits: (id, cpuLimit, memoryLimit) =>
+    request(`/admin/servers/${id}/limits`, {
+      method: "PUT",
+      body: JSON.stringify({ cpuLimit, memoryLimit }),
+    }),
+};
