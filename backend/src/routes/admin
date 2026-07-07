@@ -1,0 +1,129 @@
+// src/routes/admin.js
+import { Router } from "express";
+import crypto from "node:crypto";
+import { db } from "../db.js";
+import { config } from "../config.js";
+import { requireAdmin } from "../middleware/auth.js";
+import { ensureServerDir, writeFile, writePackageJson } from "../lib/fileManager.js";
+import { getStatus, getStats, updateLiveLimits } from "../lib/processManager.js";
+
+export const adminRouter = Router();
+adminRouter.use(requireAdmin);
+
+adminRouter.get("/users", async (req, res) => {
+  res.json(await db.listUsers());
+});
+
+adminRouter.get("/servers", async (req, res) => {
+  const servers = await db.listServers();
+  const withStatus = await Promise.all(
+    servers.map(async (s) => ({ ...s, status: getStatus(s.id), stats: await getStats(s.id) }))
+  );
+  res.json(withStatus);
+});
+
+// Picks a random port in config.portRange that isn't already used by
+// another server — purely a display value (see config.js), but kept
+// unique so it looks like a real per-server address.
+async function pickPort() {
+  const servers = await db.listServers();
+  const used = new Set(servers.map((s) => s.port).filter(Boolean));
+  const { min, max } = config.portRange;
+  let port;
+  do {
+    port = min + Math.floor(Math.random() * (max - min + 1));
+  } while (used.has(port));
+  return port;
+}
+
+// Create a new server and assign it to a user by their Discord ID.
+adminRouter.post("/servers", async (req, res) => {
+  const { name, ownerId, entry = "index.js" } = req.body;
+  if (!name || !ownerId) {
+    return res.status(400).json({ error: "ต้องระบุ name และ ownerId" });
+  }
+
+  const owner = await db.getUser(ownerId);
+  if (!owner) {
+    return res.status(404).json({ error: "ไม่พบผู้ใช้ที่ ownerId นี้ — ให้ user คนนั้น login ก่อนอย่างน้อย 1 ครั้ง" });
+  }
+
+  // Resource limits — clamp to sane ranges so a typo can't disable a bot
+  // (0 CPU%) or effectively remove the memory cap.
+  const cpuLimit = Math.min(100, Math.max(5, Number(req.body.cpuLimit) || config.defaultCpuLimit));
+  const memoryLimit = Math.min(8192, Math.max(64, Number(req.body.memoryLimit) || config.defaultMemoryLimit));
+
+  const id = crypto.randomBytes(4).toString("hex"); // e.g. "e59f29fe"
+  const port = await pickPort();
+  const server = {
+    id,
+    name,
+    ownerId,
+    entry,
+    type: "Node.js (discord.js)",
+    createdAt: Date.now(),
+    port,
+    cpuLimit,
+    memoryLimit,
+  };
+
+  await ensureServerDir(id);
+  await writePackageJson(id, {
+    name,
+    version: "1.0.0",
+    private: true,
+    dependencies: { "discord.js": "^14.14.1" },
+  });
+  await writeFile(
+    id,
+    entry,
+    [
+      "// บอท Discord เริ่มต้น — แก้ไขได้ผ่านหน้า Files",
+      "const { Client, GatewayIntentBits } = require('discord.js');",
+      "",
+      "const client = new Client({ intents: [GatewayIntentBits.Guilds] });",
+      "",
+      "client.once('ready', () => {",
+      "  console.log(`Logged in as ${client.user.tag}`);",
+      "});",
+      "",
+      "// ใส่ DISCORD_BOT_TOKEN ของบอทตัวนี้ตรงนี้ (อย่า commit ขึ้น git!)",
+      "client.login(process.env.DISCORD_BOT_TOKEN);",
+      "",
+    ].join("\n")
+  );
+
+  await db.createServer(server);
+  res.status(201).json(server);
+});
+
+adminRouter.delete("/servers/:id", async (req, res) => {
+  const server = await db.getServer(req.params.id);
+  if (!server) return res.status(404).json({ error: "ไม่พบเซิร์ฟเวอร์" });
+  await db.deleteServer(req.params.id);
+  // Note: this only removes the DB record. Delete the folder in
+  // backend/data/servers/<id> manually (or extend this route) if you
+  // want the files gone too — left explicit on purpose to avoid
+  // accidental data loss from a stray admin click.
+  res.json({ ok: true });
+});
+
+// Update a server's CPU% / Memory(MB) limits. Takes effect immediately if
+// the server is already running (processManager re-reads the limits on
+// every watchdog tick — no restart needed for the memory kill-switch, but
+// the Node heap flag (--max-old-space-size) only applies on next start).
+adminRouter.put("/servers/:id/limits", async (req, res) => {
+  const server = await db.getServer(req.params.id);
+  if (!server) return res.status(404).json({ error: "ไม่พบเซิร์ฟเวอร์" });
+
+  const cpuLimit = Math.min(100, Math.max(5, Number(req.body.cpuLimit) || server.cpuLimit || config.defaultCpuLimit));
+  const memoryLimit = Math.min(
+    8192,
+    Math.max(64, Number(req.body.memoryLimit) || server.memoryLimit || config.defaultMemoryLimit)
+  );
+
+  const updated = await db.updateServer(req.params.id, { cpuLimit, memoryLimit });
+  updateLiveLimits(req.params.id, { cpuLimit, memoryLimit });
+
+  res.json(updated);
+});
