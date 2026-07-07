@@ -1,0 +1,292 @@
+// js/components/commandConsole.js
+import { api } from "../api.js";
+import { onRouteLeave } from "../lifecycle.js";
+
+const STATUS_LABEL = { online: "ออนไลน์", offline: "ออฟไลน์", starting: "กำลังเริ่ม" };
+const HISTORY_LEN = 40; // ~1 minute of history at a 1.5s poll interval
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 MiB";
+  const mib = bytes / 1024 / 1024;
+  if (mib < 1024) return `${mib.toFixed(mib < 10 ? 2 : 1)} MiB`;
+  return `${(mib / 1024).toFixed(2)} GiB`;
+}
+
+function formatRate(bytesPerSec) {
+  if (!bytesPerSec) return "0 KB/s";
+  const kb = bytesPerSec / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB/s`;
+  return `${(kb / 1024).toFixed(2)} MB/s`;
+}
+
+function formatUptime(ms) {
+  if (!ms || ms < 1000) return "0s";
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const parts = [];
+  if (h) parts.push(`${h}h`);
+  if (h || m) parts.push(`${m}m`);
+  parts.push(`${s}s`);
+  return parts.join(" ");
+}
+
+function formatDate(ts) {
+  if (!ts) return "—";
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Builds a small filled sparkline (area + line) as inline SVG from a
+// rolling array of numbers, scaled against `max` (or the series' own
+// peak, whichever is bigger, so a flat-zero series doesn't look "full").
+function sparkline(values, max, color, width = 100, height = 32) {
+  const safeMax = Math.max(max, ...values, 1);
+  const n = values.length;
+  if (n < 2) {
+    return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none"></svg>`;
+  }
+  const stepX = width / (n - 1);
+  const points = values.map((v, i) => {
+    const x = i * stepX;
+    const y = height - (Math.min(v, safeMax) / safeMax) * height;
+    return [x, y];
+  });
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L${width},${height} L0,${height} Z`;
+  const gradId = `grad-${color.replace(/[^a-z0-9]/gi, "")}`;
+  return `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.45" />
+          <stop offset="100%" stop-color="${color}" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#${gradId})" stroke="none" />
+      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />
+    </svg>`;
+}
+
+export async function renderCommandConsole(route) {
+  const { serverId } = route;
+  const el = document.createElement("div");
+
+  el.innerHTML = `
+    <div class="run-header fade-in-up">
+      <div class="run-header-info">
+        <div class="run-header-title">
+          <span class="status-dot status-offline" id="header-status-dot"></span>
+          <h1 id="header-title">เซิร์ฟเวอร์ ${serverId}</h1>
+        </div>
+        <div class="run-header-sub" id="header-sub">NodeJS · กำลังโหลด...</div>
+      </div>
+      <div class="power-row power-row-lg">
+        <button class="power-btn power-start" id="btn-start" title="Start">▶<span>Start</span></button>
+        <button class="power-btn power-restart" id="btn-restart" title="Restart">⟳<span>Restart</span></button>
+        <button class="power-btn power-stop" id="btn-stop" title="Stop">■<span>Stop</span></button>
+      </div>
+    </div>
+
+    <div class="console-layout">
+      <div class="console-main">
+        <div class="console console-lg" id="console"></div>
+        <div class="console-input-row">
+          <input class="console-input" id="console-input" placeholder="พิมพ์คำสั่งแล้วกด Enter..." />
+          <button class="btn btn-primary" id="console-send">ส่ง</button>
+        </div>
+      </div>
+
+      <div class="console-side">
+        <div class="stat-card stat-card-lg" id="stat-address">
+          <div class="stat-icon">📡</div>
+          <div class="stat-body">
+            <div class="stat-label">Address</div>
+            <div class="stat-value stat-value-lg" id="stat-address-value">—</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-lg" id="stat-status">
+          <div class="stat-icon">●</div>
+          <div class="stat-body">
+            <div class="stat-label">Uptime</div>
+            <div class="stat-value stat-value-lg" id="stat-uptime">0s</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-lg">
+          <div class="stat-icon">▤</div>
+          <div class="stat-body">
+            <div class="stat-label">CPU Load</div>
+            <div class="stat-value stat-value-lg"><span id="stat-cpu">0%</span> <span class="stat-limit" id="stat-cpu-limit">/ 50%</span></div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-lg">
+          <div class="stat-icon">▦</div>
+          <div class="stat-body">
+            <div class="stat-label">Memory</div>
+            <div class="stat-value stat-value-lg"><span id="stat-memory">0 MiB</span> <span class="stat-limit" id="stat-memory-limit">/ 512 MiB</span></div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-lg">
+          <div class="stat-icon">▣</div>
+          <div class="stat-body">
+            <div class="stat-label">Disk</div>
+            <div class="stat-value stat-value-lg" id="stat-disk">0 MiB</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-lg">
+          <div class="stat-icon">⬇</div>
+          <div class="stat-body">
+            <div class="stat-label">Network (Inbound)</div>
+            <div class="stat-value stat-value-lg" id="stat-net-in">0 KB/s</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-lg">
+          <div class="stat-icon">⬆</div>
+          <div class="stat-body">
+            <div class="stat-label">Network (Outbound)</div>
+            <div class="stat-value stat-value-lg" id="stat-net-out">0 KB/s</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid fade-in-up">
+      <div class="chart-card">
+        <div class="chart-card-head"><span>CPU Load</span><span id="chart-cpu-now">0%</span></div>
+        <div class="chart-card-body" id="chart-cpu"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-head"><span>Memory</span><span id="chart-mem-now">0 MiB</span></div>
+        <div class="chart-card-body" id="chart-mem"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-head"><span>Network</span><span id="chart-net-now">0 KB/s</span></div>
+        <div class="chart-card-body" id="chart-net"></div>
+      </div>
+    </div>
+  `;
+
+  const consoleEl = el.querySelector("#console");
+  const input = el.querySelector("#console-input");
+  const headerDot = el.querySelector("#header-status-dot");
+  const headerSub = el.querySelector("#header-sub");
+  const addressValue = el.querySelector("#stat-address-value");
+  const uptimeValue = el.querySelector("#stat-uptime");
+  const cpuValue = el.querySelector("#stat-cpu");
+  const cpuLimitLabel = el.querySelector("#stat-cpu-limit");
+  const memoryValue = el.querySelector("#stat-memory");
+  const memoryLimitLabel = el.querySelector("#stat-memory-limit");
+  const diskValue = el.querySelector("#stat-disk");
+  const netInValue = el.querySelector("#stat-net-in");
+  const netOutValue = el.querySelector("#stat-net-out");
+
+  const chartCpu = el.querySelector("#chart-cpu");
+  const chartMem = el.querySelector("#chart-mem");
+  const chartNet = el.querySelector("#chart-net");
+  const chartCpuNow = el.querySelector("#chart-cpu-now");
+  const chartMemNow = el.querySelector("#chart-mem-now");
+  const chartNetNow = el.querySelector("#chart-net-now");
+
+  const history = { cpu: [], mem: [], net: [] };
+
+  function printLines(lines) {
+    lines.forEach((l) => {
+      const div = document.createElement("div");
+      div.className = `line ${l.type}`;
+      div.textContent = l.text;
+      consoleEl.appendChild(div);
+    });
+    if (lines.length) consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  async function send() {
+    const command = input.value.trim();
+    if (!command) return;
+    input.value = "";
+    // Real-time feedback: echo the command immediately, then stream in
+    // whatever the backend collected once it finishes running.
+    printLines([{ type: "cmd", text: `$ ${command}` }]);
+    const lines = await api.runCommand(serverId, command);
+    printLines(lines.filter((l) => !(l.type === "cmd" && l.text === `$ ${command}`)));
+  }
+
+  el.querySelector("#console-send").onclick = send;
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") send();
+  });
+
+  el.querySelector("#btn-start").onclick = () => api.start(serverId);
+  el.querySelector("#btn-stop").onclick = () => api.stop(serverId);
+  el.querySelector("#btn-restart").onclick = () => api.restart(serverId);
+
+  const { lines } = await api.getLogs(serverId);
+  printLines(lines.length ? lines : [{ type: "ok", text: `เชื่อมต่อกับ ${serverId} แล้ว พิมพ์คำสั่งด้านล่างเพื่อเริ่ม` }]);
+
+  // ---- Live status polling ---------------------------------------------
+  // Logs are re-fetched in full each tick (simple + correct given the
+  // backend keeps only a rolling in-memory buffer); we only *render* the
+  // lines we haven't already shown, so the console doesn't flicker/duplicate.
+  let knownLineCount = lines.length;
+  let headerInitialized = false;
+
+  async function poll() {
+    try {
+      const stats = await api.getStats(serverId);
+      const logResult = await api.getLogs(serverId);
+
+      headerDot.className = `status-dot status-${stats.status}`;
+      headerSub.textContent = `NodeJS · ${STATUS_LABEL[stats.status] ?? stats.status} · สร้างเมื่อ ${formatDate(stats.createdAt)} — ตอนนี้ ${formatDate(Date.now())}`;
+
+      addressValue.textContent = stats.address ?? "—";
+      uptimeValue.textContent = formatUptime(stats.uptimeMs);
+
+      const memMiB = stats.memory / 1024 / 1024;
+      cpuValue.textContent = `${stats.cpu.toFixed(1)}%`;
+      cpuLimitLabel.textContent = `/ ${stats.cpuLimitPercent ?? 50}%`;
+      memoryValue.textContent = formatBytes(stats.memory);
+      memoryLimitLabel.textContent = `/ ${stats.memoryLimitMB ?? 512} MiB`;
+      diskValue.textContent = formatBytes(stats.disk);
+
+      const netIn = stats.network?.rxBytesPerSec ?? 0;
+      const netOut = stats.network?.txBytesPerSec ?? 0;
+      netInValue.textContent = formatRate(netIn);
+      netOutValue.textContent = formatRate(netOut);
+
+      // Roll the chart history and redraw the sparklines with real samples.
+      history.cpu.push(stats.cpu);
+      history.mem.push(memMiB);
+      history.net.push((netIn + netOut) / 1024); // KB/s combined
+      if (history.cpu.length > HISTORY_LEN) history.cpu.shift();
+      if (history.mem.length > HISTORY_LEN) history.mem.shift();
+      if (history.net.length > HISTORY_LEN) history.net.shift();
+
+      chartCpu.innerHTML = sparkline(history.cpu, stats.cpuLimitPercent || 50, "var(--ok)");
+      chartMem.innerHTML = sparkline(history.mem, stats.memoryLimitMB || 512, "var(--accent)");
+      chartNet.innerHTML = sparkline(history.net, 50, "var(--warn)");
+      chartCpuNow.textContent = `${stats.cpu.toFixed(1)}%`;
+      chartMemNow.textContent = formatBytes(stats.memory);
+      chartNetNow.textContent = formatRate(netIn + netOut);
+
+      if (logResult.lines.length > knownLineCount) {
+        printLines(logResult.lines.slice(knownLineCount));
+        knownLineCount = logResult.lines.length;
+      } else if (logResult.lines.length < knownLineCount) {
+        // Log buffer rolled over (backend trims oldest lines) — resync.
+        knownLineCount = logResult.lines.length;
+      }
+
+      headerInitialized = true;
+    } catch {
+      // Transient network hiccup — just try again next tick.
+      if (!headerInitialized) headerSub.textContent = "NodeJS · เชื่อมต่อไม่ได้ กำลังลองใหม่...";
+    }
+  }
+
+  await poll();
+  const pollTimer = setInterval(poll, 1500);
+  onRouteLeave(() => clearInterval(pollTimer));
+
+  return el;
+}
