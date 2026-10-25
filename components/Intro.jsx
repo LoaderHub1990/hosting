@@ -34,7 +34,7 @@ function useCursor(x, y) {
   const node = (
     <>
       {rip && <i key={rip.k} className="in-rip" style={{ left: rip.x, top: rip.y }} />}
-      <b className={'in-cur' + (c.press ? ' press' : '')} style={{ left: c.x, top: c.y }}>▲</b>
+      <b className={'in-cur' + (c.press ? ' press' : '')} style={{ left: c.x, top: c.y }}><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4.5 2.5l15 8.6-6.6 1.9-3.4 6.4z" fill="#fff" stroke="#000" strokeWidth="1.6" strokeLinejoin="round" /></svg></b>
     </>
   );
   return { go, click, node };
@@ -132,32 +132,12 @@ function P3() {
 // เมนูจริงของสคริปต์ (แท็บ → กลุ่ม → ปุ่มควบคุม)  t=สวิตช์ s=สไลเดอร์ d=ดรอปดาวน์ b=ปุ่ม k=คีย์
 const MENU = [
   ['General', '⌂', [
-    [['Info', [['b', 'Copy Discord']]], ['Automatic', [['t', 'AutoFarm Coin'], ['s', 'Farm Speed', 10, 30], ['t', 'Anti Fling'], ['b', 'Unlock Camera Zoom'], ['b', 'Unlock All Emotes']]]],
-    [['Fling', [['s', 'Fling Timeout', 1, 10], ['d', 'Select Player', ['Player1', 'Player2', 'Player3']], ['b', 'Fling Selected'], ['b', 'Fling All Players'], ['b', 'Fling Murderer'], ['b', 'Fling Sheriff/Hero']]]],
+    [['Automatic', [['t', 'AutoFarm Coin'], ['s', 'Farm Speed', 10, 30], ['b', 'Unlock Camera Zoom']]]],
+    [['Fling', [['d', 'Select Player', ['Player1', 'Player2']], ['s', 'Fling Timeout', 1, 10], ['b', 'Fling Selected']]]],
   ]],
   ['Combat', '✦', [
-    [['Murder Operations', [['t', 'Kill All'], ['b', 'Kill Sheriff/Hero'], ['t', 'Show Kill All Button'], ['t', 'Show Throw Button']]], ['Keybinds', [['k', 'Shoot Murderer', 'E'], ['k', 'Kill All', 'Q'], ['k', 'Throw Knife', 'F']]]],
-    [['Sheriff Operations', [['d', 'Aimlock Target Part', ['HumanoidRootPart', 'Head', 'UpperTorso']], ['t', 'Aimlock Murder'], ['b', 'Grab Gun'], ['t', 'Auto Grab Gun']]], ['Shoot', [['t', 'Show Shoot Button'], ['d', 'Shoot Mode', ['Wallbang', 'Silent Aim']]]]],
-  ]],
-  ['ESP', '◉', [
-    [['ESP', [['t', 'ESP Player'], ['t', 'ESP Murderer'], ['t', 'ESP Sheriff/Hero'], ['t', 'ESP Gun Drop'], ['t', 'ESP Tagname']]]],
-    [],
-  ]],
-  ['Music/Audio', '♪', [
-    [['BoomBox / FE Radio', [['d', 'Radio Mode', ['FE Radio', 'Local']], ['s', 'Local Volume', 0, 100], ['t', 'Loop Local Radio'], ['b', 'Play Radio'], ['b', 'Stop Radio']]]],
-    [],
-  ]],
-  ['Local Player', '☺', [
-    [['Movement', [['t', 'Speed Boost'], ['s', 'Speed Value', 16, 1000], ['s', 'JumpPower', 50, 500], ['t', 'Infinite Jump'], ['t', 'Noclip']]]],
-    [],
-  ]],
-  ['Teleport', '➤', [
-    [['Teleport', [['d', 'Select Player', ['Player1', 'Player2', 'Player3']], ['b', 'TP To Player'], ['b', 'TP To Murderer'], ['b', 'TP To Sheriff/Hero']]]],
-    [['Map Teleports', [['b', 'TP To Map'], ['b', 'TP To Lobby']]]],
-  ]],
-  ['Settings', '⚙', [
-    [['Menu', [['k', 'Toggle UI', 'RightControl'], ['d', 'Toggle Button', ['Mobile only', 'Mobile & PC']], ['t', 'Silence Notifications'], ['b', 'Unload UI']]]],
-    [['Themes', [['d', 'Theme', ['Mono', 'Midnight', 'Rose']]]]],
+    [['Murder Operations', [['t', 'Kill All'], ['b', 'Kill Sheriff/Hero'], ['k', 'Throw Knife', 'F']]]],
+    [['Sheriff Operations', [['d', 'Shoot Mode', ['Wallbang', 'Silent Aim']], ['t', 'Aimlock Murder'], ['b', 'Grab Gun']]]],
   ]],
 ];
 const SLIDER_DEF = { 'Farm Speed': 21, 'Fling Timeout': 3, 'Local Volume': 50, 'Speed Value': 16, JumpPower: 50 };
@@ -221,16 +201,11 @@ function P5() {
       cur.go(p1.x, p1.y);
       for (let v = 22; v <= 28; v++) { setVals((s) => ({ ...s, 'General:Farm Speed': v })); await sleep(85); }
       await sleep(500); if (!ok()) return;
-      setScroll(58); await sleep(1000); if (!ok()) return; setScroll(0); await sleep(800); if (!ok()) return;
-      await pick('General:Select Player', 1, ['Player1', 'Player2', 'Player3']); if (!ok()) return;
+      await pick('General:Select Player', 1, ['Player1', 'Player2']); if (!ok()) return;
       // Combat
       if (!(await goTab(1))) return;
       if (!(await hit('[data-ctl="Combat:Kill All"]', 0.88, 0.5))) return; flip('Combat:Kill All'); await sleep(500); if (!ok()) return;
-      await pick('Combat:Shoot Mode', 1, ['Wallbang', 'Silent Aim']); if (!ok()) return;
-      // ESP
-      if (!(await goTab(2))) return;
-      if (!(await hit('[data-ctl="ESP:ESP Player"]', 0.88, 0.5))) return; flip('ESP:ESP Player'); await sleep(450); if (!ok()) return;
-      if (!(await hit('[data-ctl="ESP:ESP Murderer"]', 0.88, 0.5))) return; flip('ESP:ESP Murderer'); await sleep(1100); if (!ok()) return;
+      await pick('Combat:Shoot Mode', 1, ['Wallbang', 'Silent Aim']); if (!ok()) return; await sleep(900); if (!ok()) return;
       // ปิด/เปิดเมนู
       cur.go(520, 215); setHide(true); await sleep(1500); if (!ok()) return; setHide(false); await sleep(1800);
     }
