@@ -5,7 +5,7 @@ import { Icon } from './Fx';
 import { Mark } from './Logo';
 
 const LINKS = [
-  ['/', 'หน้าแรก', 'home'],
+  ['/home', 'หน้าแรก', 'home'],
   ['/getkey', 'Get Key', 'key'],
   ['/docs', 'Docs', 'book'],
   ['/obfuscate', 'Obfuscate', 'shield'],
@@ -18,7 +18,7 @@ export default function Nav() {
   const on = (h) => (h === '/' ? path === '/' : path === h || path.startsWith(h + '/'));
   return (
     <nav className="dock site-dock rim" aria-label="เมนูหลัก">
-      <Link href="/" className="dock-brand" aria-label="128B!t Hub X">
+      <Link href="/home" className="dock-brand" aria-label="128B!t Hub X">
         <Mark size={40} />
         <span className="dock-tx"><b>128B!t Hub X</b><span>Roblox Script Hub</span></span>
       </Link>

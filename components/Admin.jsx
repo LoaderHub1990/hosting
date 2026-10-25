@@ -73,7 +73,7 @@ function Login({ discord, onDone }) {
         </label>
         <button className="h-btn primary wide rp" disabled={busy || !pw}><Icon n="lock" s={16} />{busy ? 'กำลังตรวจสอบ…' : 'เข้าสู่ระบบ'}</button>
       </form>
-      <Link href="/" className="h-sub" style={{ textAlign: 'center' }}>← กลับหน้าแรก</Link>
+      <Link href="/home" className="h-sub" style={{ textAlign: 'center' }}>← กลับหน้าแรก</Link>
     </section>
   );
 }
@@ -124,7 +124,7 @@ function Panel({ me, onLogout }) {
         <div className="dock-tx"><b>{me.name}</b><span className="on">Admin · {me.via === 'discord' ? 'Discord' : 'รหัสผ่าน'}</span></div>
         <div className="dock-act">
           <button className="ibtn rp" onClick={refresh} aria-label="รีเฟรช" title="รีเฟรช"><Icon n="refresh" s={18} /></button>
-          <Link className="ibtn rp" href="/" aria-label="หน้าเว็บ" title="หน้าเว็บ"><Icon n="home" s={18} /></Link>
+          <Link className="ibtn rp" href="/home" aria-label="หน้าเว็บ" title="หน้าเว็บ"><Icon n="home" s={18} /></Link>
           <button className="ibtn danger rp" onClick={logout} aria-label="ออกจากระบบ" title="ออกจากระบบ"><Icon n="logout" s={18} /></button>
         </div>
       </header>
