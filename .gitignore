@@ -1,0 +1,9 @@
+node_modules
+.next
+.env
+.env.local
+data/*
+!data/.gitkeep
+keys.db.json
+analytics.db.json
+# ถ้า deploy บน Vercel ต้อง commit private/premium/main.lua (ใช้ repo แบบ Private เท่านั้น!)

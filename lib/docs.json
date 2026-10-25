@@ -1,0 +1,2830 @@
+{
+ "cats": [
+  {
+   "name": "Getting Started",
+   "icon": "zap"
+  },
+  {
+   "name": "Layout",
+   "icon": "layers"
+  },
+  {
+   "name": "Elements",
+   "icon": "sliders"
+  },
+  {
+   "name": "Features",
+   "icon": "bell"
+  },
+  {
+   "name": "Examples",
+   "icon": "file"
+  }
+ ],
+ "pages": [
+  {
+   "id": "load",
+   "cat": 0,
+   "title": "Load Library",
+   "lead": "โหลดไลบรารีเข้าสคริปต์ด้วย loadstring จากลิงก์ raw บน GitHub",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " BitUI = loadstring(game:HttpGet("
+      ],
+      [
+       "ts",
+       "\"https://raw.githubusercontent.com/4rise-Dev/128Bit-UI/refs/heads/main/128bitUI.lua\""
+      ],
+      [
+       "",
+       "))()"
+      ]
+     ]
+    },
+    {
+     "t": "note",
+     "icon": "zap",
+     "parts": [
+      {
+       "t": "text",
+       "v": "ถ้าโฮสต์ไฟล์ไว้ที่อื่น ให้แทน URL ด้วยลิงก์ raw ของคุณเอง"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "window",
+   "cat": 0,
+   "title": "Create Window",
+   "lead": "สร้างหน้าต่างหลักของ UI พร้อมกำหนดชื่อ โลโก้ ขนาด ปุ่มเปิด/ปิด และธีมเริ่มต้น",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " Window = BitUI:CreateWindow({\n    Title         = "
+      ],
+      [
+       "ts",
+       "\"My Hub\""
+      ],
+      [
+       "",
+       ",\n    SubTitle      = "
+      ],
+      [
+       "ts",
+       "\"v1.0\""
+      ],
+      [
+       "",
+       ",\n    LogoId        = "
+      ],
+      [
+       "ts",
+       "\"rbxassetid://10709819149\""
+      ],
+      [
+       "",
+       ",\n    Size          = UDim2.new("
+      ],
+      [
+       "tn",
+       "0"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "720"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "0"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "485"
+      ],
+      [
+       "",
+       "),\n    ToggleKey     = Enum.KeyCode.RightControl,\n    DefaultTheme  = "
+      ],
+      [
+       "ts",
+       "\"NeverloseCrimson\""
+      ],
+      [
+       "",
+       ",\n})"
+      ]
+     ]
+    },
+    {
+     "t": "h3",
+     "v": "Options"
+    },
+    {
+     "t": "table",
+     "head": [
+      "Name",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "Title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อหลักบนหน้าต่าง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "SubTitle"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ข้อความรอง เช่น เวอร์ชัน"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "LogoId"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "โลโก้หลักบนหน้าต่าง (rbxassetid)"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Size"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "UDim2"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ขนาดหน้าต่าง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "ToggleKey"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "Enum.KeyCode"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ปุ่มคีย์บอร์ดสำหรับเปิด/ปิดหน้าต่าง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "DefaultTheme"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ธีมเริ่มต้น ดูชื่อได้ในหน้า Themes"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "themes",
+   "cat": 0,
+   "title": "Themes",
+   "lead": "รายชื่อธีมสีที่ใช้ได้ กำหนดผ่านตัวเลือก DefaultTheme ตอนสร้างหน้าต่าง",
+   "blocks": [
+    {
+     "t": "table",
+     "head": [
+      "Theme",
+      "สี"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "NeverloseCrimson"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#e11d48"
+        },
+        {
+         "t": "text",
+         "v": "แดง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "StarHubGold"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#eab308"
+        },
+        {
+         "t": "text",
+         "v": "ทอง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "CyberCyan"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#06b6d4"
+        },
+        {
+         "t": "text",
+         "v": "ฟ้าไซเบอร์"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "MatrixEmerald"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#10b981"
+        },
+        {
+         "t": "text",
+         "v": "เขียว"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "ObsidianViolet"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#8b5cf6"
+        },
+        {
+         "t": "text",
+         "v": "ม่วง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "SakuraBlossom"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#f472b6"
+        },
+        {
+         "t": "text",
+         "v": "ชมพู"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "GlacierIce"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#60a5fa"
+        },
+        {
+         "t": "text",
+         "v": "น้ำเงินน้ำแข็ง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "SunsetFlame"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#f97316"
+        },
+        {
+         "t": "text",
+         "v": "ส้มพระอาทิตย์ตก"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "ElectricLime"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#a3e635"
+        },
+        {
+         "t": "text",
+         "v": "เขียวสะท้อน"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "MidnightStealth"
+        }
+       ],
+       [
+        {
+         "t": "dot",
+         "c": "#9ca3af"
+        },
+        {
+         "t": "text",
+         "v": "เทา"
+        }
+       ]
+      ]
+     ]
+    },
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " Window = BitUI:CreateWindow({\n    Title        = "
+      ],
+      [
+       "ts",
+       "\"My Hub\""
+      ],
+      [
+       "",
+       ",\n    DefaultTheme = "
+      ],
+      [
+       "ts",
+       "\"CyberCyan\""
+      ],
+      [
+       "",
+       ",\n})"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tabs",
+   "cat": 1,
+   "title": "Tabs",
+   "lead": "สร้างแท็บและหัวข้อคั่นในแถบเมนูด้านข้าง จัดลำดับด้วย LayoutOrder",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "",
+       "Window:AddNavHeader("
+      ],
+      [
+       "ts",
+       "\"SECTION NAME\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "1"
+      ],
+      [
+       "",
+       ")  "
+      ],
+      [
+       "tc",
+       "-- หัวข้อคั่น"
+      ],
+      [
+       "",
+       "\n\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " MyTab = Window:CreateTab({\n    Title       = "
+      ],
+      [
+       "ts",
+       "\"Main\""
+      ],
+      [
+       "",
+       ",\n    IconId      = "
+      ],
+      [
+       "ts",
+       "\"rbxassetid://10709791882\""
+      ],
+      [
+       "",
+       ",\n    LayoutOrder = "
+      ],
+      [
+       "tn",
+       "2"
+      ],
+      [
+       "",
+       ",\n})"
+      ]
+     ]
+    },
+    {
+     "t": "h3",
+     "v": "AddNavHeader"
+    },
+    {
+     "t": "table",
+     "head": [
+      "Name",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "Title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ข้อความหัวข้อคั่น"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "LayoutOrder"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "number"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ลำดับการแสดงผล"
+        }
+       ]
+      ]
+     ]
+    },
+    {
+     "t": "h3",
+     "v": "CreateTab"
+    },
+    {
+     "t": "table",
+     "head": [
+      "Name",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "Title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อแท็บ"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "IconId"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ไอคอนของแท็บ"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "LayoutOrder"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "number"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ลำดับการแสดงผล"
+        }
+       ]
+      ]
+     ]
+    },
+    {
+     "t": "note",
+     "icon": "zap",
+     "parts": [
+      {
+       "t": "text",
+       "v": "LayoutOrder ของหัวข้อคั่น (AddNavHeader) ต้องน้อยกว่า LayoutOrder ของแท็บที่อยู่ใต้หัวข้อนั้น"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "groupbox",
+   "cat": 1,
+   "title": "GroupBox",
+   "lead": "กล่องจัดกลุ่มองค์ประกอบภายในแท็บ เลือกวางฝั่งซ้ายหรือขวาได้",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " Box = MyTab:CreateGroupBox("
+      ],
+      [
+       "ts",
+       "\"Left\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "ts",
+       "\"TITLE\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "ts",
+       "\"BADGE\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "ts",
+       "\"rbxassetid://ICON\""
+      ],
+      [
+       "",
+       ")"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Param",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "Side"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "\"Left\" หรือ \"Right\""
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อหัวกล่อง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Badge"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ป้ายเล็กข้างชื่อ (ใส่ nil ถ้าไม่ใช้)"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Icon"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ไอคอนหัวกล่อง"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "floating",
+   "cat": 1,
+   "title": "Floating Toggle",
+   "lead": "ปุ่มลอยสี่เหลี่ยมมนข้างจอ กดเพื่อเปิด/ปิดหน้าต่าง ตั้งค่าได้ก่อนสร้างหน้าต่าง",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "",
+       "BitUI.Settings.ShowFloatingToggle = "
+      ],
+      [
+       "tk",
+       "true"
+      ],
+      [
+       "",
+       "\nBitUI.Settings.FloatIconId = "
+      ],
+      [
+       "ts",
+       "\"rbxassetid://XXX\""
+      ],
+      [
+       "",
+       "\nBitUI.Settings.FloatSize   = "
+      ],
+      [
+       "tn",
+       "52"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Name",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "ShowFloatingToggle"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "boolean"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "แสดงหรือซ่อนปุ่มลอย"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "FloatIconId"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ไอคอนบนปุ่มลอย"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "FloatSize"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "number"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ขนาดปุ่มเป็นพิกเซล"
+        }
+       ]
+      ]
+     ]
+    },
+    {
+     "t": "note",
+     "icon": "zap",
+     "parts": [
+      {
+       "t": "text",
+       "v": "ตั้งค่าเหล่านี้ก่อนเรียก CreateWindow หรือจะปรับผ่านแท็บ Settings ใน UI ก็ได้ ค่าจะบันทึกอัตโนมัติ"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "toggle",
+   "cat": 2,
+   "title": "Toggle",
+   "lead": "สวิตช์เปิด/ปิด คืนค่า true หรือ false ผ่าน callback และควบคุมด้วยโค้ดได้",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " myToggle = Box:AddToggle(\n    "
+      ],
+      [
+       "ts",
+       "\"Toggle Name\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "ts",
+       "\"Description text\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tk",
+       "false"
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       "(value)\n        print("
+      ],
+      [
+       "ts",
+       "\"Toggle:\""
+      ],
+      [
+       "",
+       ", value)\n    "
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n)\n\nmyToggle.Set("
+      ],
+      [
+       "tk",
+       "true"
+      ],
+      [
+       "",
+       ")\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " current = myToggle.Get()"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Param",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อสวิตช์"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "description"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "คำอธิบาย (ใส่ nil ได้)"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "default"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "boolean"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ค่าเริ่มต้น"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "callback"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "function(value)"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ถูกเรียกเมื่อค่าเปลี่ยน"
+        }
+       ]
+      ]
+     ]
+    },
+    {
+     "t": "h3",
+     "v": "Methods"
+    },
+    {
+     "t": "table",
+     "head": [
+      "Method",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "Set(boolean)"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ตั้งค่าสวิตช์ด้วยโค้ด"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Get()"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "อ่านค่าปัจจุบัน (boolean)"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "slider",
+   "cat": 2,
+   "title": "Slider",
+   "lead": "แถบเลื่อนปรับค่าตัวเลข กำหนดช่วง ค่าเริ่มต้น และหน่วยที่แสดงได้",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " mySlider = Box:AddSlider(\n    "
+      ],
+      [
+       "ts",
+       "\"Speed\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tn",
+       "0"
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tn",
+       "100"
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tn",
+       "50"
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "ts",
+       "\"u/s\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       "(value)\n        print("
+      ],
+      [
+       "ts",
+       "\"Slider:\""
+      ],
+      [
+       "",
+       ", value)\n    "
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n)"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Param",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อแถบเลื่อน"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "min"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "number"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ค่าต่ำสุด"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "max"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "number"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ค่าสูงสุด"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "default"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "number"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ค่าเริ่มต้น"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "suffix"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "หน่วยที่แสดงต่อท้ายตัวเลข"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "callback"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "function(value)"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ถูกเรียกเมื่อค่าเปลี่ยน"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "dropdown",
+   "cat": 2,
+   "title": "Dropdown",
+   "lead": "เมนูเลือกตัวเลือกจากรายการ ส่งค่าที่เลือกกลับผ่าน callback",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " myDropdown = Box:AddDropdown(\n    "
+      ],
+      [
+       "ts",
+       "\"Mode\""
+      ],
+      [
+       "",
+       ",\n    {"
+      ],
+      [
+       "ts",
+       "\"Option A\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "ts",
+       "\"Option B\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "ts",
+       "\"Option C\""
+      ],
+      [
+       "",
+       "},\n    "
+      ],
+      [
+       "ts",
+       "\"Option A\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       "(selected)\n        print("
+      ],
+      [
+       "ts",
+       "\"Selected:\""
+      ],
+      [
+       "",
+       ", selected)\n    "
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n)"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Param",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อเมนู"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "options"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "table"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "รายการตัวเลือก"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "default"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ตัวเลือกเริ่มต้น"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "callback"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "function(selected)"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ถูกเรียกเมื่อเลือกตัวเลือก"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "input",
+   "cat": 2,
+   "title": "Text Input",
+   "lead": "ช่องกรอกข้อความ ส่งข้อความที่พิมพ์กลับผ่าน callback",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "",
+       "Box:AddInput(\n    "
+      ],
+      [
+       "ts",
+       "\"Player Name\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "ts",
+       "\"Enter username...\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "ts",
+       "\"\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       "(text)\n        print("
+      ],
+      [
+       "ts",
+       "\"Input:\""
+      ],
+      [
+       "",
+       ", text)\n    "
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n)"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Param",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อช่องกรอก"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "placeholder"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ข้อความจาง ๆ ตอนยังว่าง"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "default"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ค่าเริ่มต้น"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "callback"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "function(text)"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ถูกเรียกเมื่อกรอกข้อความ"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "action",
+   "cat": 2,
+   "title": "Action Row",
+   "lead": "แถวปุ่มที่คลิกได้ ใช้สำหรับคำสั่งครั้งเดียว เช่น รีเซ็ตค่า",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "",
+       "Box:AddActionRow(\n    "
+      ],
+      [
+       "ts",
+       "\"Reset\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "ts",
+       "\"คืนค่าทุกอย่างกลับ default\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "ts",
+       "\"rbxassetid://10734933222\""
+      ],
+      [
+       "",
+       ",\n    "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       "()\n        print("
+      ],
+      [
+       "ts",
+       "\"Clicked!\""
+      ],
+      [
+       "",
+       ")\n    "
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n)"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Param",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ชื่อปุ่ม"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "description"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "คำอธิบายใต้ชื่อ"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "icon"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ไอคอนของปุ่ม"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "callback"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "function()"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ถูกเรียกเมื่อคลิก"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "notify",
+   "cat": 3,
+   "title": "Notification",
+   "lead": "แสดงการแจ้งเตือนมุมจอ กำหนดไอคอน ป้าย สีป้าย และระยะเวลาได้",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "",
+       "BitUI:Notify({\n    Title      = "
+      ],
+      [
+       "ts",
+       "\"TITLE\""
+      ],
+      [
+       "",
+       ",\n    Content    = "
+      ],
+      [
+       "ts",
+       "\"เนื้อหา notification\""
+      ],
+      [
+       "",
+       ",\n    Icon       = "
+      ],
+      [
+       "ts",
+       "\"rbxassetid://10709752996\""
+      ],
+      [
+       "",
+       ",\n    Badge      = "
+      ],
+      [
+       "ts",
+       "\"NEW\""
+      ],
+      [
+       "",
+       ",\n    BadgeColor = Color3.fromRGB("
+      ],
+      [
+       "tn",
+       "34"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "197"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "94"
+      ],
+      [
+       "",
+       "),\n    Duration   = "
+      ],
+      [
+       "tn",
+       "4"
+      ],
+      [
+       "",
+       ",\n})"
+      ]
+     ]
+    },
+    {
+     "t": "table",
+     "head": [
+      "Name",
+      "Type",
+      "คำอธิบาย"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "Title"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "หัวข้อ"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Content"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "เนื้อหา"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Icon"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ไอคอน (ไม่บังคับ)"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Badge"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "string"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "ป้ายเล็ก (ไม่บังคับ)"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BadgeColor"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "Color3"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "สีป้าย (ไม่บังคับ)"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "Duration"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "number"
+        }
+       ],
+       [
+        {
+         "t": "text",
+         "v": "เวลาแสดงเป็นวินาที ค่าเริ่มต้น 4"
+        }
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "settings",
+   "cat": 3,
+   "title": "Settings Tab",
+   "lead": "หน้าตั้งค่าสำเร็จรูปในตัว สร้างได้ด้วยคำสั่งเดียว มีธีม เสียง วอลล์เปเปอร์ ความโปร่งใส และปุ่มลอย",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "",
+       "Window:AddNavHeader("
+      ],
+      [
+       "ts",
+       "\"SETTINGS\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "6"
+      ],
+      [
+       "",
+       ")\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " SettingsTab = Window:CreateTab({\n    Title       = "
+      ],
+      [
+       "ts",
+       "\"Settings\""
+      ],
+      [
+       "",
+       ",\n    IconId      = BitUI.Icons.Settings,\n    LayoutOrder = "
+      ],
+      [
+       "tn",
+       "7"
+      ],
+      [
+       "",
+       ",\n})\nWindow:CreateDualColumnSettings(SettingsTab)"
+      ]
+     ]
+    },
+    {
+     "t": "note",
+     "icon": "zap",
+     "parts": [
+      {
+       "t": "text",
+       "v": "ค่าที่ผู้ใช้ปรับในหน้านี้จะบันทึกอัตโนมัติ (config auto-save)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "icons",
+   "cat": 3,
+   "title": "Icons",
+   "lead": "ไอคอนสำเร็จรูปที่มากับไลบรารี เรียกใช้ผ่าน BitUI.Icons",
+   "blocks": [
+    {
+     "t": "table",
+     "head": [
+      "Icon",
+      "Asset ID"
+     ],
+     "rows": [
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Logo"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10709819149"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Settings"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10734950309"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Zap"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10709791882"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Combat"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10709818534"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Refresh"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10734933222"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Dashboard"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10709752035"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Teleport"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10723404337"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Check"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10709790644"
+        }
+       ]
+      ],
+      [
+       [
+        {
+         "t": "code",
+         "v": "BitUI.Icons.Copy"
+        }
+       ],
+       [
+        {
+         "t": "code",
+         "v": "rbxassetid://10709812159"
+        }
+       ]
+      ]
+     ]
+    },
+    {
+     "t": "p",
+     "parts": [
+      {
+       "t": "text",
+       "v": "ดูรายการทั้งหมดได้จาก "
+      },
+      {
+       "t": "code",
+       "v": "BitUI.Icons"
+      },
+      {
+       "t": "text",
+       "v": " ในตัวไลบรารี"
+      }
+     ]
+    },
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "",
+       "IconId = BitUI.Icons.Zap"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "full",
+   "cat": 4,
+   "title": "Full Example",
+   "lead": "ตัวอย่างสมบูรณ์ตั้งแต่โหลดไลบรารี สร้างหน้าต่าง แท็บ กล่อง ไปจนถึงแจ้งเตือน",
+   "blocks": [
+    {
+     "t": "code",
+     "lang": "lua",
+     "runs": [
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " BitUI = loadstring(game:HttpGet("
+      ],
+      [
+       "ts",
+       "\"https://raw.githubusercontent.com/4rise-Dev/128Bit-UI/refs/heads/main/128bitUI.lua\""
+      ],
+      [
+       "",
+       "))()\n\nBitUI.Settings.FloatIconId = "
+      ],
+      [
+       "ts",
+       "\"rbxassetid://10709819149\""
+      ],
+      [
+       "",
+       "\n\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " Window = BitUI:CreateWindow({\n    Title     = "
+      ],
+      [
+       "ts",
+       "\"128B!t Hub\""
+      ],
+      [
+       "",
+       ",\n    SubTitle  = "
+      ],
+      [
+       "ts",
+       "\"Movement\""
+      ],
+      [
+       "",
+       ",\n    Size      = UDim2.new("
+      ],
+      [
+       "tn",
+       "0"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "720"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "0"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "485"
+      ],
+      [
+       "",
+       "),\n    ToggleKey = Enum.KeyCode.RightControl,\n})\n\nWindow:AddNavHeader("
+      ],
+      [
+       "ts",
+       "\"MODULES\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "1"
+      ],
+      [
+       "",
+       ")\n\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " Tab = Window:CreateTab({\n    Title       = "
+      ],
+      [
+       "ts",
+       "\"Movement\""
+      ],
+      [
+       "",
+       ",\n    IconId      = BitUI.Icons.Zap,\n    LayoutOrder = "
+      ],
+      [
+       "tn",
+       "2"
+      ],
+      [
+       "",
+       ",\n})\n\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " Box = Tab:CreateGroupBox("
+      ],
+      [
+       "ts",
+       "\"Left\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "ts",
+       "\"SPEED\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tk",
+       "nil"
+      ],
+      [
+       "",
+       ", BitUI.Icons.Zap)\n\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       " getHumanoid()\n    "
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " char = game:GetService("
+      ],
+      [
+       "ts",
+       "\"Players\""
+      ],
+      [
+       "",
+       ").LocalPlayer.Character\n    "
+      ],
+      [
+       "tk",
+       "return"
+      ],
+      [
+       "",
+       " char "
+      ],
+      [
+       "tk",
+       "and"
+      ],
+      [
+       "",
+       " char:FindFirstChild("
+      ],
+      [
+       "ts",
+       "\"Humanoid\""
+      ],
+      [
+       "",
+       ")\n"
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n\n"
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " speedToggle = Box:AddToggle("
+      ],
+      [
+       "ts",
+       "\"Enable Speed\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tk",
+       "nil"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tk",
+       "false"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       "(v)\n    "
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " hum = getHumanoid()\n    "
+      ],
+      [
+       "tk",
+       "if"
+      ],
+      [
+       "",
+       " hum "
+      ],
+      [
+       "tk",
+       "then"
+      ],
+      [
+       "",
+       " hum.WalkSpeed = v "
+      ],
+      [
+       "tk",
+       "and"
+      ],
+      [
+       "",
+       " "
+      ],
+      [
+       "tn",
+       "100"
+      ],
+      [
+       "",
+       " "
+      ],
+      [
+       "tk",
+       "or"
+      ],
+      [
+       "",
+       " "
+      ],
+      [
+       "tn",
+       "16"
+      ],
+      [
+       "",
+       " "
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n"
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       ")\n\nBox:AddSlider("
+      ],
+      [
+       "ts",
+       "\"WalkSpeed\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "16"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "300"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tn",
+       "16"
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "ts",
+       "\"SPD\""
+      ],
+      [
+       "",
+       ", "
+      ],
+      [
+       "tk",
+       "function"
+      ],
+      [
+       "",
+       "(v)\n    "
+      ],
+      [
+       "tk",
+       "local"
+      ],
+      [
+       "",
+       " hum = getHumanoid()\n    "
+      ],
+      [
+       "tk",
+       "if"
+      ],
+      [
+       "",
+       " hum "
+      ],
+      [
+       "tk",
+       "and"
+      ],
+      [
+       "",
+       " speedToggle.Get() "
+      ],
+      [
+       "tk",
+       "then"
+      ],
+      [
+       "",
+       " hum.WalkSpeed = v "
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       "\n"
+      ],
+      [
+       "tk",
+       "end"
+      ],
+      [
+       "",
+       ")\n\nBitUI:Notify({ Title = "
+      ],
+      [
+       "ts",
+       "\"LOADED\""
+      ],
+      [
+       "",
+       ", Content = "
+      ],
+      [
+       "ts",
+       "\"128B!t Hub ready\""
+      ],
+      [
+       "",
+       ", Badge = "
+      ],
+      [
+       "ts",
+       "\"OK\""
+      ],
+      [
+       "",
+       " })"
+      ]
+     ]
+    },
+    {
+     "t": "note",
+     "icon": "zap",
+     "parts": [
+      {
+       "t": "text",
+       "v": "ตัวอย่างนี้ปรับไวยากรณ์ให้ถูกต้องตาม Lua แล้ว (Lua ไม่อนุญาตให้ใช้การกำหนดค่าเป็นนิพจน์ในวงเล็บ จึงแยกเป็นฟังก์ชัน getHumanoid)"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

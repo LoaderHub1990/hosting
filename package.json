@@ -1,0 +1,21 @@
+{
+  "name": "128bit-hub-x",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3000}",
+    "setup:obfuscator": "node scripts/install-prometheus.mjs",
+    "obf-service": "node scripts/obf-service.mjs"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "engines": {
+    "node": ">=18.18"
+  },
+  "type": "module"
+}
