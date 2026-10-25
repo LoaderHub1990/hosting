@@ -129,41 +129,141 @@ function P3() {
   );
 }
 
-const FEATURES = [
-  ['General', ['AutoFarm Coin', 'Farm Speed', 'Anti Fling', 'Unlock Camera Zoom', 'Unlock All Emotes', 'Fling Players']],
-  ['Combat', ['Kill All', 'Kill Sheriff/Hero', 'Aimlock Murder', 'Auto Grab Gun', 'Shoot Murderer', 'Throw Knife']],
-  ['ESP', ['ESP Player', 'ESP Murderer', 'ESP Sheriff/Hero', 'ESP Gun Drop', 'ESP Tagname']],
-  ['Music/Audio', ['FE Radio', 'Local Radio', 'Local Volume', 'Loop Radio']],
-  ['Local Player', ['Speed Boost', 'JumpPower', 'Infinite Jump', 'Noclip']],
-  ['Teleport', ['TP To Player', 'TP To Murderer', 'TP To Sheriff/Hero', 'TP To Map', 'TP To Lobby']],
-  ['Settings', ['Toggle UI Key', 'Toggle Button', 'Silence Notifications', 'Configs', 'Themes']],
+// เมนูจริงของสคริปต์ (แท็บ → กลุ่ม → ปุ่มควบคุม)  t=สวิตช์ s=สไลเดอร์ d=ดรอปดาวน์ b=ปุ่ม k=คีย์
+const MENU = [
+  ['General', '⌂', [
+    [['Info', [['b', 'Copy Discord']]], ['Automatic', [['t', 'AutoFarm Coin'], ['s', 'Farm Speed', 10, 30], ['t', 'Anti Fling'], ['b', 'Unlock Camera Zoom'], ['b', 'Unlock All Emotes']]]],
+    [['Fling', [['s', 'Fling Timeout', 1, 10], ['d', 'Select Player', ['Player1', 'Player2', 'Player3']], ['b', 'Fling Selected'], ['b', 'Fling All Players'], ['b', 'Fling Murderer'], ['b', 'Fling Sheriff/Hero']]]],
+  ]],
+  ['Combat', '✦', [
+    [['Murder Operations', [['t', 'Kill All'], ['b', 'Kill Sheriff/Hero'], ['t', 'Show Kill All Button'], ['t', 'Show Throw Button']]], ['Keybinds', [['k', 'Shoot Murderer', 'E'], ['k', 'Kill All', 'Q'], ['k', 'Throw Knife', 'F']]]],
+    [['Sheriff Operations', [['d', 'Aimlock Target Part', ['HumanoidRootPart', 'Head', 'UpperTorso']], ['t', 'Aimlock Murder'], ['b', 'Grab Gun'], ['t', 'Auto Grab Gun']]], ['Shoot', [['t', 'Show Shoot Button'], ['d', 'Shoot Mode', ['Wallbang', 'Silent Aim']]]]],
+  ]],
+  ['ESP', '◉', [
+    [['ESP', [['t', 'ESP Player'], ['t', 'ESP Murderer'], ['t', 'ESP Sheriff/Hero'], ['t', 'ESP Gun Drop'], ['t', 'ESP Tagname']]]],
+    [],
+  ]],
+  ['Music/Audio', '♪', [
+    [['BoomBox / FE Radio', [['d', 'Radio Mode', ['FE Radio', 'Local']], ['s', 'Local Volume', 0, 100], ['t', 'Loop Local Radio'], ['b', 'Play Radio'], ['b', 'Stop Radio']]]],
+    [],
+  ]],
+  ['Local Player', '☺', [
+    [['Movement', [['t', 'Speed Boost'], ['s', 'Speed Value', 16, 1000], ['s', 'JumpPower', 50, 500], ['t', 'Infinite Jump'], ['t', 'Noclip']]]],
+    [],
+  ]],
+  ['Teleport', '➤', [
+    [['Teleport', [['d', 'Select Player', ['Player1', 'Player2', 'Player3']], ['b', 'TP To Player'], ['b', 'TP To Murderer'], ['b', 'TP To Sheriff/Hero']]]],
+    [['Map Teleports', [['b', 'TP To Map'], ['b', 'TP To Lobby']]]],
+  ]],
+  ['Settings', '⚙', [
+    [['Menu', [['k', 'Toggle UI', 'RightControl'], ['d', 'Toggle Button', ['Mobile only', 'Mobile & PC']], ['t', 'Silence Notifications'], ['b', 'Unload UI']]]],
+    [['Themes', [['d', 'Theme', ['Mono', 'Midnight', 'Rose']]]]],
+  ]],
 ];
+const SLIDER_DEF = { 'Farm Speed': 21, 'Fling Timeout': 3, 'Local Volume': 50, 'Speed Value': 16, JumpPower: 50 };
+const DD_DEF = { 'Radio Mode': 'FE Radio', 'Aimlock Target Part': 'HumanoidRootPart', 'Shoot Mode': 'Wallbang', 'Toggle Button': 'Mobile only', Theme: 'Mono' };
+const menuDefaults = () => {
+  const v = {};
+  MENU.forEach(([tab, , cols]) => cols.forEach((col) => col.forEach(([, ctls]) => ctls.forEach(([t, n]) => {
+    const k = tab + ':' + n;
+    v[k] = t === 't' ? n === 'Loop Local Radio' : t === 's' ? SLIDER_DEF[n] : t === 'd' ? (DD_DEF[n] || '') : null;
+  }))));
+  return v;
+};
+
+function Ctl({ tab, c, vals }) {
+  const [t, n, a, b] = c, key = tab + ':' + n, v = vals[key];
+  if (t === 't') return <div className="in-wr" data-ctl={key}><span>{n}</span><i className={'in-wsw' + (v ? ' on' : '')}><u /></i></div>;
+  if (t === 's') {
+    const f = ((v - a) / (b - a)) * 100;
+    return <div className="in-wr s" data-ctl={key}><span>{n}</span><em>{v}</em><div className="in-wtr"><b style={{ width: f + '%' }} /><u style={{ left: f + '%' }} /></div></div>;
+  }
+  if (t === 'd') return <div className="in-wr d" data-ctl={key}><span>{n}</span><kbd>{v || 'Select…'}<em>▾</em></kbd></div>;
+  if (t === 'k') return <div className="in-wr" data-ctl={key}><span>{n}</span><kbd>{a}</kbd></div>;
+  return <div className="in-wr b" data-ctl={key}>{n}</div>;
+}
 
 function P5() {
-  const [sel, setSel] = useState(0), [hide, setHide] = useState(false);
+  const wrap = useRef(null), win = useRef(null);
+  const [tab, setTab] = useState(0), [vals, setVals] = useState(menuDefaults), [dd, setDd] = useState(null);
+  const [scroll, setScroll] = useState(0), [hide, setHide] = useState(false);
+  const cur = useCursor(520, 215);
   useAnim(async ({ sleep, ok }) => {
+    const find = (sel, fx = 0.5, fy = 0.5) => {
+      const el = win.current && win.current.querySelector(sel), w = wrap.current && wrap.current.getBoundingClientRect();
+      if (!el || !w) return null;
+      const r = el.getBoundingClientRect(), k = w.width / W;
+      return { x: (r.left + r.width * fx - w.left) / k, y: (r.top + r.height * fy - w.top) / k, l: (r.left - w.left) / k, b: (r.bottom - w.top) / k, w: r.width / k };
+    };
+    const hit = async (sel, fx, fy) => {
+      const p = find(sel, fx, fy); if (!p) return null;
+      cur.go(p.x, p.y); await sleep(680); if (!ok()) return null;
+      await cur.click(p.x, p.y, sleep); return p;
+    };
+    const flip = (key) => setVals((s) => ({ ...s, [key]: !s[key] }));
+    const pick = async (key, idx, items) => {
+      const p = await hit(`[data-ctl="${key}"]`, 0.5, 0.65); if (!p || !ok()) return;
+      setDd({ x: p.l, y: p.b - 4, w: p.w, items }); await sleep(550); if (!ok()) return;
+      const x = p.l + p.w / 2, y = p.b - 4 + 6 + idx * 22 + 11;
+      cur.go(x, y); await sleep(680); if (!ok()) return; await cur.click(x, y, sleep);
+      setVals((s) => ({ ...s, [key]: items[idx] })); setDd(null); await sleep(450);
+    };
+    const goTab = async (i) => { if (!(await hit(`[data-tab="${i}"]`, 0.5, 0.5)) || !ok()) return false; setTab(i); setScroll(0); await sleep(600); return ok(); };
+
+    await sleep(700);
     while (ok()) {
-      for (let i = 0; i < FEATURES.length; i++) { if (!ok()) return; setSel(i); await sleep(1800); }
-      if (!ok()) return;
-      setHide(true); await sleep(1100); if (!ok()) return;
-      setSel(0); setHide(false); await sleep(900);
+      setTab(0); setVals(menuDefaults()); setDd(null); setScroll(0); setHide(false); cur.go(520, 215); await sleep(900); if (!ok()) return;
+      // General: สวิตช์ + สไลเดอร์ + เลื่อนหน้า + ดรอปดาวน์
+      if (!(await hit('[data-ctl="General:AutoFarm Coin"]', 0.88, 0.5))) return; flip('General:AutoFarm Coin'); await sleep(500); if (!ok()) return;
+      const p1 = find('[data-ctl="General:Farm Speed"] .in-wtr', 0.9, 0.5), p0 = find('[data-ctl="General:Farm Speed"] .in-wtr', 0.55, 0.5);
+      if (!p0 || !p1) return;
+      cur.go(p0.x, p0.y); await sleep(680); if (!ok()) return; await cur.click(p0.x, p0.y, sleep);
+      cur.go(p1.x, p1.y);
+      for (let v = 22; v <= 28; v++) { setVals((s) => ({ ...s, 'General:Farm Speed': v })); await sleep(85); }
+      await sleep(500); if (!ok()) return;
+      setScroll(58); await sleep(1000); if (!ok()) return; setScroll(0); await sleep(800); if (!ok()) return;
+      await pick('General:Select Player', 1, ['Player1', 'Player2', 'Player3']); if (!ok()) return;
+      // Combat
+      if (!(await goTab(1))) return;
+      if (!(await hit('[data-ctl="Combat:Kill All"]', 0.88, 0.5))) return; flip('Combat:Kill All'); await sleep(500); if (!ok()) return;
+      await pick('Combat:Shoot Mode', 1, ['Wallbang', 'Silent Aim']); if (!ok()) return;
+      // ESP
+      if (!(await goTab(2))) return;
+      if (!(await hit('[data-ctl="ESP:ESP Player"]', 0.88, 0.5))) return; flip('ESP:ESP Player'); await sleep(450); if (!ok()) return;
+      if (!(await hit('[data-ctl="ESP:ESP Murderer"]', 0.88, 0.5))) return; flip('ESP:ESP Murderer'); await sleep(1100); if (!ok()) return;
+      // ปิด/เปิดเมนู
+      cur.go(520, 215); setHide(true); await sleep(1500); if (!ok()) return; setHide(false); await sleep(1800);
     }
   });
+
   return (
-    <>
-      <div className="in-menu" style={at(40, 2, W - 80, 126)}>
-        <div className={'in-mwin in-glass' + (hide ? ' hide' : '')}>
-          <div className="in-mtabs">
-            {FEATURES.map(([n], i) => <span key={n} className={i === sel ? 'on' : ''}>{n}</span>)}
-          </div>
-          <div className="in-mfeat" key={sel}>
-            {FEATURES[sel][1].map((f) => <span key={f}>{f}</span>)}
+    <div ref={wrap} className="in-wrap" style={at(0, 0, W, 252)}>
+      <div ref={win} className={'in-win' + (hide ? ' hide' : '')}>
+        <div className="in-wside">
+          <div className="in-wbrand"><b>Realize</b><em>v.4.0.0</em></div>
+          {MENU.map(([n, ic], i) => <div key={n} data-tab={i} className={'in-wtb' + (i === tab ? ' on' : '')}><b>{ic}</b>{n}</div>)}
+        </div>
+        <div className="in-wc">
+          <div className="in-wci" key={tab} style={{ transform: `translateY(${-scroll}px)` }}>
+            {MENU[tab][2].map((col, ci) => (
+              <div className="in-wcol" key={ci}>
+                {col.map(([title, ctls]) => (
+                  <div className="in-wg" key={title}>
+                    <h4>{title}</h4>
+                    {ctls.map((c) => <Ctl key={c[1]} tab={MENU[tab][0]} c={c} vals={vals} />)}
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
-        <i className={'in-mtab' + (hide ? ' on' : '')} />
       </div>
-      <Head t="Open and close" b={`Press ${CFG.keyName}, or click the little arrow, and the menu slides into the edge, leaving only a tiny tab. Press ${CFG.keyName} again or click the tab to bring it back.`} />
-    </>
+      <i className={'in-wtab' + (hide ? ' on' : '')} />
+      {dd && <div className="in-wdd" style={{ left: dd.x, top: dd.y, width: dd.w }}>{dd.items.map((it) => <span key={it}>{it}</span>)}</div>}
+      {cur.node}
+      <h2 className="in-t sm" style={at(40, 194, W - 80, 22)}>Open and close</h2>
+      <p className="in-b sm" style={at(60, 218, W - 120, 34)}>{`Press ${CFG.keyName}, or click the little arrow, to slide the menu into the edge. Press ${CFG.keyName} again or click the tab to bring it back.`}</p>
+    </div>
   );
 }
 
