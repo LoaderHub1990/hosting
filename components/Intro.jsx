@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mark } from './Logo';
 
-// ทำซ้ำอินโทรของสคริปต์ Lua (Flexozy X) ให้เหมือนเป๊ะ: การ์ดกว้าง 560×400, 8 หน้า, เคอร์เซอร์จำลอง
+// ทำซ้ำอินโทรของสคริปต์ Lua (Flexozy X) ให้เหมือนเป๊ะ: การ์ดกว้าง 560×400, 7 หน้า, เคอร์เซอร์จำลอง
 const CFG = { name: '128B!t Hub X', keyName: 'K', prefix: ';' };
 const TINT = {
   blue: ['#0d2833', '#40baff'], purple: ['#261c3e', '#a878ff'],
@@ -129,54 +129,40 @@ function P3() {
   );
 }
 
-function P4() {
-  const [on, setOn] = useState(false), [mode, setMode] = useState('Normal'), [key, setKey] = useState('E'), [flash, setFlash] = useState(false);
-  const cur = useCursor(510, 138);
-  useAnim(async ({ sleep, ok }) => {
-    const step = async (x, y) => { cur.go(x, y); await sleep(600); if (!ok()) return false; await cur.click(x, y, sleep); return true; };
-    while (ok()) {
-      setOn(false); setMode('Normal'); setKey('E'); cur.go(510, 138); await sleep(500); if (!ok()) return;
-      if (!(await step(243, 42))) return; setOn(true); await sleep(700); if (!ok()) return;
-      if (!(await step(183, 94))) return; setMode('Wallbang'); await sleep(700); if (!ok()) return;
-      if (!(await step(438, 42))) return; setKey('...'); await sleep(600); if (!ok()) return; setKey('Q'); await sleep(500); if (!ok()) return;
-      if (!(await step(376, 94))) return; setFlash(true); await sleep(160); setFlash(false); await sleep(1000); if (!ok()) return;
-      cur.go(510, 138); await sleep(1000);
-    }
-  });
-  return (
-    <>
-      <div className="in-glass in-panel" style={at(80, 8, 400, 120)}>
-        <div className="in-tile" style={at(14, 14, 179, 40)}><span>Enable</span><Tg on={on} /></div>
-        <div className="in-tile" style={at(14, 66, 179, 40)}><span>Mode: {mode}</span><em>▾</em></div>
-        <div className="in-tile" style={at(207, 14, 179, 40)}><span>Keybind</span><kbd>{key}</kbd></div>
-        <div className={'in-tile in-act' + (flash ? ' flash' : '')} style={at(207, 66, 179, 40)}>Action</div>
-      </div>
-      {cur.node}
-      <Head t="Click and tap" b="Switches, dropdowns and key boxes work the way you expect. Click a switch to turn it on, or click a key box and press a new key." />
-    </>
-  );
-}
+const FEATURES = [
+  ['General', ['AutoFarm Coin', 'Farm Speed', 'Anti Fling', 'Unlock Camera Zoom', 'Unlock All Emotes', 'Fling Players']],
+  ['Combat', ['Kill All', 'Kill Sheriff/Hero', 'Aimlock Murder', 'Auto Grab Gun', 'Shoot Murderer', 'Throw Knife']],
+  ['ESP', ['ESP Player', 'ESP Murderer', 'ESP Sheriff/Hero', 'ESP Gun Drop', 'ESP Tagname']],
+  ['Music/Audio', ['FE Radio', 'Local Radio', 'Local Volume', 'Loop Radio']],
+  ['Local Player', ['Speed Boost', 'JumpPower', 'Infinite Jump', 'Noclip']],
+  ['Teleport', ['TP To Player', 'TP To Murderer', 'TP To Sheriff/Hero', 'TP To Map', 'TP To Lobby']],
+  ['Settings', ['Toggle UI Key', 'Toggle Button', 'Silence Notifications', 'Configs', 'Themes']],
+];
 
 function P5() {
-  const [hide, setHide] = useState(false), [tab, setTab] = useState(false);
-  const cur = useCursor(200, 100);
+  const [sel, setSel] = useState(0), [hide, setHide] = useState(false);
   useAnim(async ({ sleep, ok }) => {
     while (ok()) {
-      setHide(false); setTab(false); cur.go(200, 100); await sleep(600); if (!ok()) return;
-      cur.go(297, 61); await sleep(650); if (!ok()) return;
-      await cur.click(297, 61, sleep); setHide(true); setTab(true); await sleep(500); if (!ok()) return;
-      cur.go(317, 61); await sleep(650); if (!ok()) return;
-      await cur.click(317, 61, sleep); setTab(false); setHide(false); await sleep(800);
+      for (let i = 0; i < FEATURES.length; i++) { if (!ok()) return; setSel(i); await sleep(1800); }
+      if (!ok()) return;
+      setHide(true); await sleep(1100); if (!ok()) return;
+      setSel(0); setHide(false); await sleep(900);
     }
   });
   return (
     <>
-      <div className="in-screen" style={at(120, 6, 320, 122)}>
-        <div className={'in-sbar' + (hide ? ' hide' : '')}><u /><u /><u /></div>
-        <i className={'in-stab' + (tab ? ' on' : '')} />
-        {cur.node}
+      <div className="in-menu" style={at(40, 2, W - 80, 126)}>
+        <div className={'in-mwin in-glass' + (hide ? ' hide' : '')}>
+          <div className="in-mtabs">
+            {FEATURES.map(([n], i) => <span key={n} className={i === sel ? 'on' : ''}>{n}</span>)}
+          </div>
+          <div className="in-mfeat" key={sel}>
+            {FEATURES[sel][1].map((f) => <span key={f}>{f}</span>)}
+          </div>
+        </div>
+        <i className={'in-mtab' + (hide ? ' on' : '')} />
       </div>
-      <Head t="Open and close" b={`Press ${CFG.keyName}, or click the little arrow at the bottom of the bar, and it slides into the edge, leaving only a tiny tab. Press ${CFG.keyName} again or click the tab to bring it back.`} />
+      <Head t="Open and close" b={`Press ${CFG.keyName}, or click the little arrow, and the menu slides into the edge, leaving only a tiny tab. Press ${CFG.keyName} again or click the tab to bring it back.`} />
     </>
   );
 }
@@ -225,7 +211,7 @@ export default function Intro() {
   const [accent, setAccent] = useState('teal');
   const [set, setSet] = useState({ autoHide: false, startCollapsed: false, toasts: true, antiAfk: false });
   const [s, setS] = useState(1);
-  const N = 8;
+  const N = 7;
 
   useEffect(() => {
     const fit = () => setS(Math.min(1, Math.max(0.55, Math.min((innerWidth - 32) / W, (innerHeight - 40) / H))));
@@ -250,7 +236,7 @@ export default function Intro() {
 
   const [a1, a2] = TINT[accent];
   const first = page === 1, last = page === N, nx = first ? 24 : 156;
-  const body = [P1, P2, P3, P4, P5][page - 1];
+  const body = [P1, P2, P3, P5][page - 1];
   const View = body ? body : null;
 
   return (
@@ -261,9 +247,9 @@ export default function Intro() {
           <div className="in-stage" key={page}>
             <div className={'in-page ' + (dir > 0 ? 'fw' : 'bw')}>
               {View && <View />}
-              {page === 6 && <P6 accent={accent} setAccent={setAccent} />}
-              {page === 7 && <P7 set={set} setSet={setSet} />}
-              {page === 8 && <P8 />}
+              {page === 5 && <P6 accent={accent} setAccent={setAccent} />}
+              {page === 6 && <P7 set={set} setSet={setSet} />}
+              {page === 7 && <P8 />}
             </div>
           </div>
           {!last && <button type="button" className="in-skip" onClick={finish}>Skip</button>}
