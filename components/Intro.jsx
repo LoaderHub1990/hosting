@@ -6,10 +6,11 @@ import { Mark } from './Logo';
 // ทำซ้ำอินโทรของสคริปต์ Lua (Flexozy X) ให้เหมือนเป๊ะ: การ์ดกว้าง 560×400, 7 หน้า, เคอร์เซอร์จำลอง
 const CFG = { name: '128B!t Hub X', keyName: 'K', prefix: ';' };
 const TINT = {
+  white: ['#2a2a2e', '#f2f2f4'],
   blue: ['#0d2833', '#40baff'], purple: ['#261c3e', '#a878ff'],
   teal: ['#0e2e28', '#38e0ba'], orange: ['#3e2410', '#ff9632'],
 };
-const W = 560, H = 400, BY = H - 24 - 46;
+const W = 560, HMAX = 470, hFor = (pg) => (pg === 4 ? 470 : 400);
 const at = (x, y, w, h) => ({ left: x, top: y, width: w, height: h });
 
 function useAnim(fn) {
@@ -184,7 +185,7 @@ function P5() {
     const pick = async (key, idx, items) => {
       const p = await hit(`[data-ctl="${key}"]`, 0.5, 0.65); if (!p || !ok()) return;
       setDd({ x: p.l, y: p.b - 4, w: p.w, items }); await sleep(550); if (!ok()) return;
-      const x = p.l + p.w / 2, y = p.b - 4 + 6 + idx * 22 + 11;
+      const x = p.l + p.w / 2, y = p.b - 4 + 6 + idx * 28 + 14;
       cur.go(x, y); await sleep(680); if (!ok()) return; await cur.click(x, y, sleep);
       setVals((s) => ({ ...s, [key]: items[idx] })); setDd(null); await sleep(450);
     };
@@ -212,7 +213,7 @@ function P5() {
   });
 
   return (
-    <div ref={wrap} className="in-wrap" style={at(0, 0, W, 252)}>
+    <div ref={wrap} className="in-wrap" style={at(0, 0, W, 322)}>
       <div ref={win} className={'in-win' + (hide ? ' hide' : '')}>
         <div className="in-wside">
           <div className="in-wbrand"><b>Realize</b><em>v.4.0.0</em></div>
@@ -236,8 +237,8 @@ function P5() {
       <i className={'in-wtab' + (hide ? ' on' : '')} />
       {dd && <div className="in-wdd" style={{ left: dd.x, top: dd.y, width: dd.w }}>{dd.items.map((it) => <span key={it}>{it}</span>)}</div>}
       {cur.node}
-      <h2 className="in-t sm" style={at(40, 194, W - 80, 22)}>Open and close</h2>
-      <p className="in-b sm" style={at(60, 218, W - 120, 34)}>{`Press ${CFG.keyName}, or click the little arrow, to slide the menu into the edge. Press ${CFG.keyName} again or click the tab to bring it back.`}</p>
+      <h2 className="in-t sm" style={at(40, 268, W - 80, 24)}>Open and close</h2>
+      <p className="in-b sm" style={at(60, 294, W - 120, 34)}>{`Press ${CFG.keyName}, or click the little arrow, to slide the menu into the edge. Press ${CFG.keyName} again or click the tab to bring it back.`}</p>
     </div>
   );
 }
@@ -283,19 +284,19 @@ function P8() {
 export default function Intro() {
   const router = useRouter();
   const [page, setPage] = useState(1), [dir, setDir] = useState(1), [closing, setClosing] = useState(false);
-  const [accent, setAccent] = useState('teal');
+  const [accent, setAccent] = useState('white');
   const [set, setSet] = useState({ autoHide: false, startCollapsed: false, toasts: true, antiAfk: false });
   const [s, setS] = useState(1);
   const N = 7;
 
   useEffect(() => {
-    const fit = () => setS(Math.min(1, Math.max(0.55, Math.min((innerWidth - 32) / W, (innerHeight - 40) / H))));
+    const fit = () => setS(Math.min(1, Math.max(0.55, Math.min((innerWidth - 32) / W, (innerHeight - 40) / HMAX))));
     fit(); addEventListener('resize', fit); return () => removeEventListener('resize', fit);
   }, []);
-  useEffect(() => { try { const a = localStorage.getItem('hubx-accent'); if (TINT[a]) setAccent(a); } catch {} }, []);
-  useEffect(() => { try { localStorage.setItem('hubx-accent', accent); } catch {} }, [accent]);
+  useEffect(() => { try { const a = localStorage.getItem('hubx-accent-v2'); if (TINT[a]) setAccent(a); } catch {} }, []);
+  useEffect(() => { try { localStorage.setItem('hubx-accent-v2', accent); } catch {} }, [accent]);
 
-  const finish = () => { if (closing) return; setClosing(true); setTimeout(() => router.push('/home'), 480); };
+  const finish = () => { if (closing) return; setClosing(true); setTimeout(() => { window.location.assign('/home'); }, 450); };
   const go = (n) => { if (closing || n < 1 || n > N || n === page) return; setDir(n > page ? 1 : -1); setPage(n); };
   const next = () => (page >= N ? finish() : go(page + 1));
   const back = () => go(page - 1);
@@ -310,16 +311,16 @@ export default function Intro() {
   });
 
   const [a1, a2] = TINT[accent];
-  const first = page === 1, last = page === N, nx = first ? 24 : 156;
+  const Hp = hFor(page), by = Hp - 70, first = page === 1, last = page === N, nx = first ? 24 : 156;
   const body = [P1, P2, P3, P5][page - 1];
   const View = body ? body : null;
 
   return (
     <div className={'in-root' + (closing ? ' out' : '')} role="dialog" aria-label="เริ่มต้นใช้งาน">
-      <div className="in-fit" style={{ width: W * s, height: H * s }}>
-        <div className="in-card" style={{ width: W, height: H, transform: `scale(${s})`, '--a1': a1, '--a2': a2 }}>
+      <div className="in-fit" style={{ width: W * s, height: HMAX * s }}>
+        <div className="in-card" style={{ width: W, height: Hp, top: ((HMAX - Hp) / 2) * s, transform: `scale(${s})`, '--a1': a1, '--a2': a2 }}>
           <div className="in-glow" />
-          <div className="in-stage" key={page}>
+          <div className="in-stage" key={page} style={{ height: Hp - 148 }}>
             <div className={'in-page ' + (dir > 0 ? 'fw' : 'bw')}>
               {View && <View />}
               {page === 5 && <P6 accent={accent} setAccent={setAccent} />}
@@ -328,9 +329,9 @@ export default function Intro() {
             </div>
           </div>
           {!last && <button type="button" className="in-skip" onClick={finish}>Skip</button>}
-          <div className="in-dots">{Array.from({ length: N }, (_, i) => <i key={i} className={i + 1 === page ? 'on' : ''} />)}</div>
-          <button type="button" className={'in-back' + (first ? ' off' : '')} tabIndex={first ? -1 : 0} onClick={back}>Back</button>
-          <button type="button" className="in-next" style={{ left: nx, width: W - nx - 24 }} onClick={next}>{last ? 'Get started' : first ? 'เริ่มต้นใช้งาน' : 'Continue'}</button>
+          <div className="in-dots" style={{ top: by - 26 }}>{Array.from({ length: N }, (_, i) => <i key={i} className={i + 1 === page ? 'on' : ''} />)}</div>
+          <button type="button" className={'in-back' + (first ? ' off' : '')} tabIndex={first ? -1 : 0} style={{ top: by }} onClick={back}>Back</button>
+          <button type="button" className="in-next" style={{ top: by, left: nx, width: W - nx - 24 }} onClick={next}>{last ? 'Get started' : first ? 'เริ่มต้นใช้งาน' : 'Continue'}</button>
         </div>
       </div>
     </div>
