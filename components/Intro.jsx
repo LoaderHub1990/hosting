@@ -10,7 +10,7 @@ const TINT = {
   blue: ['#0d2833', '#40baff'], purple: ['#261c3e', '#a878ff'],
   teal: ['#0e2e28', '#38e0ba'], orange: ['#3e2410', '#ff9632'],
 };
-const W = 560, HMAX = 470, hFor = (pg) => (pg === 4 ? 470 : 400);
+const W = 560, HMAX = 520, hFor = (pg) => (pg === 3 ? 520 : 400);
 const at = (x, y, w, h) => ({ left: x, top: y, width: w, height: h });
 
 function useAnim(fn) {
@@ -97,50 +97,26 @@ function P2() {
   );
 }
 
-function P3() {
-  const bw = 380, bh = 52, bx = (W - bw) / 2, runX = bx + bw - 8 - 32, runY = 26 + bh / 2;
-  const [typed, setTyped] = useState(''), [typing, setTyping] = useState(false), [res, setRes] = useState(''), [pr, setPr] = useState(false);
-  const cur = useCursor(runX + 90, runY + 70);
-  useAnim(async ({ sleep, ok }) => {
-    const steps = [['fly', 'Fly is on'], ['speed 50', 'Walk speed set to 50']];
-    while (ok()) {
-      for (const [cmd, out] of steps) {
-        if (!ok()) return;
-        setTyped(''); setRes(''); await sleep(600); setTyping(true);
-        for (let n = 1; n <= cmd.length; n++) { if (!ok()) return; setTyped(cmd.slice(0, n)); await sleep(110); }
-        setTyping(false); await sleep(250); if (!ok()) return;
-        cur.go(runX, runY); await sleep(550); if (!ok()) return;
-        await cur.click(runX, runY, sleep); setPr(true); cur.go(runX + 70, runY + 60);
-        setRes(out); await sleep(120); setPr(false); await sleep(1600); setRes(''); await sleep(500);
-      }
-    }
-  });
-  return (
-    <>
-      <div className="in-tile in-bar" style={at(bx, 26, bw, bh)}>
-        {typed
-          ? <><span className="in-typed">{typed}</span><i className={'in-caret' + (typing ? ' solid' : '')} /></>
-          : <><i className={'in-caret' + (typing ? ' solid' : '')} /><span className="in-ph">Run a command</span></>}
-        <span className={'in-run' + (pr ? ' press' : '')}>Run</span>
-      </div>
-      <p className={'in-res' + (res ? ' on' : '')} style={at(0, 92, W, 20)}>{res}</p>
-      {cur.node}
-      <Head t="Commands" b={`In chat, put ${CFG.prefix} in front of a command, like ${CFG.prefix}fly or ${CFG.prefix}speed 50. Everything is also one tap away in the bar.`} />
-    </>
-  );
-}
-
 // เมนูจริงของสคริปต์ (แท็บ → กลุ่ม → ปุ่มควบคุม)  t=สวิตช์ s=สไลเดอร์ d=ดรอปดาวน์ b=ปุ่ม k=คีย์
 const MENU = [
-  ['General', '⌂', [
+  ['General', 'house', [
     [['Automatic', [['t', 'AutoFarm Coin'], ['s', 'Farm Speed', 10, 30], ['b', 'Unlock Camera Zoom']]]],
     [['Fling', [['d', 'Select Player', ['Player1', 'Player2']], ['s', 'Fling Timeout', 1, 10], ['b', 'Fling Selected']]]],
   ]],
-  ['Combat', '✦', [
+  ['Combat', 'crosshair', [
     [['Murder Operations', [['t', 'Kill All'], ['b', 'Kill Sheriff/Hero'], ['k', 'Throw Knife', 'F']]]],
     [['Sheriff Operations', [['d', 'Shoot Mode', ['Wallbang', 'Silent Aim']], ['t', 'Aimlock Murder'], ['b', 'Grab Gun']]]],
   ]],
 ];
+const ICO = {
+  house: <><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></>,
+  crosshair: <><circle cx="12" cy="12" r="10" /><line x1="22" x2="18" y1="12" y2="12" /><line x1="6" x2="2" y1="12" y2="12" /><line x1="12" x2="12" y1="6" y2="2" /><line x1="12" x2="12" y1="22" y2="18" /></>,
+  zap: <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />,
+  shield: <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />,
+  skull: <><path d="m12.5 17-.5-1-.5 1h1z" /><path d="M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20v1a1 1 0 0 0 1 1z" /><circle cx="15" cy="12" r="1" /><circle cx="9" cy="12" r="1" /></>,
+};
+const GI = { Automatic: 'zap', Fling: 'zap', 'Murder Operations': 'skull', 'Sheriff Operations': 'shield' };
+const Ico = ({ n }) => <svg className="in-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICO[n]}</svg>;
 const SLIDER_DEF = { 'Farm Speed': 21, 'Fling Timeout': 3, 'Local Volume': 50, 'Speed Value': 16, JumpPower: 50 };
 const DD_DEF = { 'Radio Mode': 'FE Radio', 'Aimlock Target Part': 'HumanoidRootPart', 'Shoot Mode': 'Wallbang', 'Toggle Button': 'Mobile only', Theme: 'Mono' };
 const menuDefaults = () => {
@@ -213,11 +189,11 @@ function P5() {
   });
 
   return (
-    <div ref={wrap} className="in-wrap" style={at(0, 0, W, 322)}>
+    <div ref={wrap} className="in-wrap" style={at(0, 0, W, 372)}>
       <div ref={win} className={'in-win' + (hide ? ' hide' : '')}>
         <div className="in-wside">
           <div className="in-wbrand"><b>Realize</b><em>v.4.0.0</em></div>
-          {MENU.map(([n, ic], i) => <div key={n} data-tab={i} className={'in-wtb' + (i === tab ? ' on' : '')}><b>{ic}</b>{n}</div>)}
+          {MENU.map(([n, ic], i) => <div key={n} data-tab={i} className={'in-wtb' + (i === tab ? ' on' : '')}><b><Ico n={ic} /></b>{n}</div>)}
         </div>
         <div className="in-wc">
           <div className="in-wci" key={tab} style={{ transform: `translateY(${-scroll}px)` }}>
@@ -225,7 +201,7 @@ function P5() {
               <div className="in-wcol" key={ci}>
                 {col.map(([title, ctls]) => (
                   <div className="in-wg" key={title}>
-                    <h4>{title}</h4>
+                    <h4>{GI[title] && <Ico n={GI[title]} />}{title}</h4>
                     {ctls.map((c) => <Ctl key={c[1]} tab={MENU[tab][0]} c={c} vals={vals} />)}
                   </div>
                 ))}
@@ -237,8 +213,12 @@ function P5() {
       <i className={'in-wtab' + (hide ? ' on' : '')} />
       {dd && <div className="in-wdd" style={{ left: dd.x, top: dd.y, width: dd.w }}>{dd.items.map((it) => <span key={it}>{it}</span>)}</div>}
       {cur.node}
-      <h2 className="in-t sm" style={at(40, 268, W - 80, 24)}>Open and close</h2>
-      <p className="in-b sm" style={at(60, 294, W - 120, 34)}>{`Press ${CFG.keyName}, or click the little arrow, to slide the menu into the edge. Press ${CFG.keyName} again or click the tab to bring it back.`}</p>
+      <div className="in-links" style={at(0, 332, W, 38)}>
+        <a className="in-lk primary" href="/home">เข้าสู่หน้าเว็บ</a>
+        <a className="in-lk" href="/getkey">รับคีย์</a>
+      </div>
+      <h2 className="in-t sm" style={at(40, 262, W - 80, 24)}>Open and close</h2>
+      <p className="in-b sm" style={at(60, 288, W - 120, 36)}>{`Press ${CFG.keyName}, or click the little arrow, to slide the menu into the edge. Press ${CFG.keyName} again or click the tab to bring it back.`}</p>
     </div>
   );
 }
@@ -287,7 +267,7 @@ export default function Intro() {
   const [accent, setAccent] = useState('white');
   const [set, setSet] = useState({ autoHide: false, startCollapsed: false, toasts: true, antiAfk: false });
   const [s, setS] = useState(1);
-  const N = 7;
+  const N = 6;
 
   useEffect(() => {
     const fit = () => setS(Math.min(1, Math.max(0.55, Math.min((innerWidth - 32) / W, (innerHeight - 40) / HMAX))));
@@ -312,7 +292,7 @@ export default function Intro() {
 
   const [a1, a2] = TINT[accent];
   const Hp = hFor(page), by = Hp - 70, first = page === 1, last = page === N, nx = first ? 24 : 156;
-  const body = [P1, P2, P3, P5][page - 1];
+  const body = [P1, P2, P5][page - 1];
   const View = body ? body : null;
 
   return (
@@ -323,15 +303,17 @@ export default function Intro() {
           <div className="in-stage" key={page} style={{ height: Hp - 148 }}>
             <div className={'in-page ' + (dir > 0 ? 'fw' : 'bw')}>
               {View && <View />}
-              {page === 5 && <P6 accent={accent} setAccent={setAccent} />}
-              {page === 6 && <P7 set={set} setSet={setSet} />}
-              {page === 7 && <P8 />}
+              {page === 4 && <P6 accent={accent} setAccent={setAccent} />}
+              {page === 5 && <P7 set={set} setSet={setSet} />}
+              {page === 6 && <P8 />}
             </div>
           </div>
           {!last && <button type="button" className="in-skip" onClick={finish}>Skip</button>}
           <div className="in-dots" style={{ top: by - 26 }}>{Array.from({ length: N }, (_, i) => <i key={i} className={i + 1 === page ? 'on' : ''} />)}</div>
           <button type="button" className={'in-back' + (first ? ' off' : '')} tabIndex={first ? -1 : 0} style={{ top: by }} onClick={back}>Back</button>
-          <button type="button" className="in-next" style={{ top: by, left: nx, width: W - nx - 24 }} onClick={next}>{last ? 'Get started' : first ? 'เริ่มต้นใช้งาน' : 'Continue'}</button>
+          {last
+            ? <a className="in-next" href="/home" style={{ top: by, left: nx, width: W - nx - 24 }}>Get started</a>
+            : <button type="button" className="in-next" style={{ top: by, left: nx, width: W - nx - 24 }} onClick={next}>{first ? 'เริ่มต้นใช้งาน' : 'Continue'}</button>}
         </div>
       </div>
     </div>
